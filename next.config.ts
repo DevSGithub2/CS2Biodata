@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  serverExternalPackages: ["steam-user", "globaloffensive", "@doctormckay/steam-crypto"],
 };
 
 export default withSentryConfig(nextConfig, {
