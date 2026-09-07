@@ -8,18 +8,15 @@ const BOT_USERNAME = process.env.STEAM_BOT_USERNAME;
 const BOT_PASSWORD = process.env.STEAM_BOT_PASSWORD;
 
 if (!BOT_USERNAME || !BOT_PASSWORD) {
-  console.error("[Worker] Missing Steam bot credentials in environment variables.");
+  console.error("[Worker] Missing Steam bot credentials.");
   process.exit(1);
 }
 
-console.log("[Worker] Launching standalone Steam GC Bot daemon...");
-client.logOn({
-  accountName: BOT_USERNAME,
-  password: BOT_PASSWORD,
-});
+console.log("[Worker] Launching Steam GC Bot daemon...");
+client.logOn({ accountName: BOT_USERNAME, password: BOT_PASSWORD });
 
 client.on("loggedOn", () => {
-  console.log("[Worker] Logged into Steam network. Requesting CS2 App 730...");
+  console.log("[Worker] Logged into Steam. Requesting CS2 App 730...");
   client.gamesPlayed([730]);
 });
 
