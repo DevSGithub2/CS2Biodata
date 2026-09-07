@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 50" width="160" height="50">
+    <defs>
+      <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#1e293b" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#020617" stop-opacity="0.95"/>
+      </linearGradient>
+    </defs>
+    <rect x="2" y="2" width="156" height="46" rx="8" fill="url(#g3)" stroke="#64748b" stroke-width="1.5"/>
+    <text x="80" y="22" fill="#ffffff" font-size="12" font-weight="900" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" letter-spacing="1">S3</text>
+    <text x="80" y="38" fill="#64748b" font-size="10" font-weight="800" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle">★★★</text>
+  </svg>

@@ -1,0 +1,65 @@
+{
+  "76561198877011661": {
+    "steamId64": "76561198877011661",
+    "name": "DevS",
+    "premierRating": null,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/0249d253b6e245d84ad20d00f192cb0a6677dc12_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T10:49:06.238Z"
+  },
+  "76561198894945204": {
+    "steamId64": "76561198894945204",
+    "name": "LoveS",
+    "premierRating": 15608,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/7eda9b649396418a3a64130cecdf387d702d6d94_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T09:56:49.913Z"
+  },
+  "76561199093718016": {
+    "steamId64": "76561199093718016",
+    "name": "ErenS",
+    "premierRating": 15671,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/fc6735368740956dc9e5c8411deb812ce98c25ca_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T10:09:13.898Z"
+  },
+  "76561197988659527": {
+    "steamId64": "76561197988659527",
+    "name": "#.Epaves|Trashinger",
+    "premierRating": null,
+    "competitiveRank": null,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T10:39:42.717Z"
+  },
+  "76561198108459138": {
+    "steamId64": "76561198108459138",
+    "name": "m0NesY",
+    "premierRating": null,
+    "competitiveRank": null,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T10:39:55.221Z"
+  },
+  "76561198113666193": {
+    "steamId64": "76561198113666193",
+    "name": "Herbus doubledoor",
+    "premierRating": null,
+    "competitiveRank": null,
+    "wingmanRank": null,
+    "matchHistoryCount": 0,
+    "avatar": "https://avatars.steamstatic.com/2521fb9f4f727cd8650434f965aaee530740b9fe_full.jpg",
+    "dataSource": "GC_BOT_SNAPSHOT",
+    "lastUpdatedAt": "2026-08-21T10:48:10.847Z"
+  }
+}
