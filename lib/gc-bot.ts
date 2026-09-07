@@ -2,59 +2,58 @@ import SteamUser from "steam-user";
 import GlobalOffensive from "globaloffensive";
 
 declare global {
-  var _gcBotInstance: {
-    user: SteamUser;
+  var __gc_bot: {
+    client: SteamUser;
     csgo: GlobalOffensive;
     isReady: boolean;
   } | undefined;
 }
 
-export function getGCBot() {
-  if (global._gcBotInstance) {
-    return global._gcBotInstance;
+const BOT_USERNAME = process.env.STEAM_BOT_USERNAME;
+const BOT_PASSWORD = process.env.STEAM_BOT_PASSWORD;
+
+function initializeGCBot() {
+  if (global.__gc_bot) {
+    return global.__gc_bot;
   }
 
-  const user = new SteamUser();
-  const csgo = new GlobalOffensive(user);
+  const client = new SteamUser();
+  const csgo = new GlobalOffensive(client);
 
-  const username = process.env.STEAM_BOT_USERNAME;
-  const password = process.env.STEAM_BOT_PASSWORD;
-
-  const botInstance = {
-    user,
+  const state = {
+    client,
     csgo,
     isReady: false,
   };
 
-  if (username && password) {
-    user.logOn({
-      accountName: username,
-      password: password,
+  if (BOT_USERNAME && BOT_PASSWORD) {
+    client.logOn({
+      accountName: BOT_USERNAME,
+      password: BOT_PASSWORD,
     });
 
-    user.on("loggedOn", () => {
-      console.log("[GC BOT] Logged into Steam. Launching CS2 (App 730)...");
-      user.setPersona(SteamUser.EPersonaState.Online);
-      user.gamesPlayed([730]);
+    client.on("loggedOn", () => {
+      console.log("[Valve GC Bot] Logged into Steam network. Booting CS2 appid 730...");
+      client.gamesPlayed([730]);
     });
 
     csgo.on("connectedToGC", () => {
-      console.log("[GC BOT] Successfully established connection with Valve CS2 Game Coordinator!");
-      botInstance.isReady = true;
+      console.log("[Valve GC Bot] Connected to CS2 Game Coordinator successfully.");
+      state.isReady = true;
     });
 
     csgo.on("disconnectedFromGC", (reason) => {
-      console.warn("[GC BOT] Disconnected from GC:", reason);
-      botInstance.isReady = false;
+      console.warn("[Valve GC Bot] Disconnected from GC:", reason);
+      state.isReady = false;
     });
 
-    user.on("error", (err) => {
-      console.error("[GC BOT] Steam login error:", err.message);
+    client.on("error", (err) => {
+      console.error("[Valve GC Bot] Steam client connection error:", err.message);
     });
-  } else {
-    console.warn("[GC BOT] STEAM_BOT_USERNAME or STEAM_BOT_PASSWORD missing from environment.");
   }
 
-  global._gcBotInstance = botInstance;
-  return botInstance;
+  global.__gc_bot = state;
+  return state;
 }
+
+export const gcBot = initializeGCBot();

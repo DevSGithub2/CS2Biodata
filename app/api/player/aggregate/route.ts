@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import * as Sentry from "@sentry/nextjs";
+import { parseAndConvertSteamID } from "@/lib/steamid";
+import { gcBot } from "@/lib/gc-bot";
 import {
-  SteamIdentifiers,
   SteamBans,
   WeaponTelemetry,
   MapRecord,
@@ -15,34 +16,6 @@ export const dynamic = "force-dynamic";
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const FACEIT_API_KEY = process.env.FACEIT_API_KEY;
-
-function convertSteamIds(steamId64Str: string): SteamIdentifiers {
-  try {
-    const id64 = BigInt(steamId64Str);
-    const baseline = BigInt("76561197960265728");
-    const accountId = id64 - baseline;
-    const y = accountId % 2n;
-    const z = accountId / 2n;
-
-    return {
-      steamID: `STEAM_0:${y}:${z}`,
-      steamID3: `[U:1:${accountId}]`,
-      steamID64: steamId64Str,
-      accountId: accountId.toString(),
-      customUrl: "",
-      profileUrl: `https://steamcommunity.com/profiles/${steamId64Str}`,
-    };
-  } catch {
-    return {
-      steamID: "N/A",
-      steamID3: "N/A",
-      steamID64: steamId64Str,
-      accountId: "N/A",
-      customUrl: "N/A",
-      profileUrl: `https://steamcommunity.com/profiles/${steamId64Str}`,
-    };
-  }
-}
 
 async function resolveSteamId(rawQuery: string): Promise<{ steamId: string | null; customUrl: string | null }> {
   const clean = rawQuery.trim().replace(/^https?:\/\/(www\.)?steamcommunity\.com\/(id|profiles)\//, "").replace(/\/$/, "");
@@ -65,6 +38,23 @@ async function resolveSteamId(rawQuery: string): Promise<{ steamId: string | nul
   return { steamId: null, customUrl: null };
 }
 
+// Helper: Query GC Profile with 2.5s fallback so it never blocks the request if the bot is busy
+async function queryGCProfile(steamId64: string): Promise<any | null> {
+  if (!gcBot.isReady) return null;
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(null), 2500);
+    try {
+      gcBot.csgo.requestPlayersProfile(steamId64, (profile: any) => {
+        clearTimeout(timeout);
+        resolve(profile);
+      });
+    } catch {
+      clearTimeout(timeout);
+      resolve(null);
+    }
+  });
+}
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get("query");
@@ -79,16 +69,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Unable to resolve target Steam identifier." }, { status: 404 });
     }
 
-    const identifiers = convertSteamIds(steamId);
+    const converted = parseAndConvertSteamID(steamId);
 
-    // 1. Parallel External Ingestion
-    const [summaryRes, bansRes, statsRes, faceitRes] = await Promise.all([
+    // 1. Parallel Ingestion: Web API, Bans, Stats, FACEIT, and Game Coordinator
+    const [summaryRes, bansRes, statsRes, faceitRes, gcProfile] = await Promise.all([
       fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${steamId}`),
       fetch(`https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key=${STEAM_API_KEY}&steamids=${steamId}`),
       fetch(`https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=730&key=${STEAM_API_KEY}&steamid=${steamId}`).catch(() => null),
       fetch(`https://open.faceit.com/data/v4/players?game=cs2&game_player_id=${steamId}`, {
         headers: { Authorization: `Bearer ${FACEIT_API_KEY}` },
       }).catch(() => null),
+      queryGCProfile(steamId),
     ]);
 
     const summaryData = await summaryRes.json();
@@ -100,8 +91,14 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Steam profile not accessible or does not exist." }, { status: 404 });
     }
 
-    identifiers.customUrl = customUrl || profileRaw.profileurl.split("/id/")[1]?.replace("/", "") || "None";
-    identifiers.profileUrl = profileRaw.profileurl;
+    const identifiers = {
+      steamID: converted.steamID,
+      steamID3: converted.steamID3,
+      steamID64: converted.steamID64,
+      accountId: converted.accountID.toString(),
+      customUrl: customUrl || profileRaw.profileurl.split("/id/")[1]?.replace("/", "") || "None",
+      profileUrl: profileRaw.profileurl,
+    };
 
     // 2. Parse Steam Bans
     const rawBans = bansData?.players?.[0];
@@ -126,7 +123,6 @@ export async function GET(req: Request) {
     const shotsHit = getVal("total_shots_hit");
     const headshots = getVal("total_kills_headshot");
 
-    // Weapon parser helper
     const buildWeapon = (key: string, name: string): WeaponTelemetry => {
       const wKills = getVal(`total_kills_${key}`);
       const wShots = getVal(`total_shots_${key}`);
@@ -153,7 +149,6 @@ export async function GET(req: Request) {
       mp9: buildWeapon("mp9", "MP9"),
     };
 
-    // Maps parser helper
     const mapCodes = [
       { key: "de_dust2", name: "Dust II" },
       { key: "de_inferno", name: "Inferno" },
@@ -220,10 +215,8 @@ export async function GET(req: Request) {
 
       const fStatsData = fStatsRes && fStatsRes.ok ? await fStatsRes.json() : null;
       const fHistData = fHistRes && fHistRes.ok ? await fHistRes.json() : null;
-
       const life = fStatsData?.lifetime || {};
 
-      // Map Segment parsing
       const rawSegments = fStatsData?.segments || [];
       const segments: FaceitMapSegment[] = rawSegments
         .filter((s: any) => s._id?.gameMode === "5v5" && s.type === "duplicated_rounds")
@@ -311,11 +304,10 @@ export async function GET(req: Request) {
       };
     }
 
-    // 5. Index to MongoDB Atlas
+    // 5. Index & Persist to Atlas
     const client = await clientPromise;
     const db = client.db("cs2biodata");
 
-    // Fetch cached Valve match share codes if any
     const valveMatches = await db
       .collection("valve_matches")
       .find({ steamId })
@@ -327,6 +319,7 @@ export async function GET(req: Request) {
       steamId,
       steam: steamDossier,
       faceit: faceitDossier,
+      gameCoordinator: gcProfile || null,
       valveHistory: valveMatches,
       updatedAt: new Date().toISOString(),
     };
