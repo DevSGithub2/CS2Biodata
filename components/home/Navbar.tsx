@@ -1,0 +1,104 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Trophy, Search } from "lucide-react";
+import { TacticalLogo } from "@/components/ui/TacticalLogo";
+
+export function Navbar() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [query, setQuery] = useState("");
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      router.push(`/player/${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  return (
+    <header className="relative z-50 w-full border-b border-cyan-900/40 bg-[#04070a]/90 backdrop-blur-xl">
+      <div className="max-w-[1700px] mx-auto px-6 sm:px-12 h-20 flex items-center justify-between gap-6 font-mono">
+        
+        {/* Brand Group */}
+        <div className="flex items-center gap-10">
+          <Link href="/" className="flex items-center gap-3.5 group">
+            <div className="p-1.5 bg-cyan-950/40 border border-cyan-500/50 rounded transition-all duration-300 group-hover:border-cyan-400 group-hover:shadow-[0_0_16px_rgba(0,255,204,0.4)]">
+              <TacticalLogo className="w-6 h-6" />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-black tracking-widest text-white group-hover:text-cyan-300 transition-colors">
+                  CS2<span className="text-cyan-400">BIODATA</span>
+                </span>
+                <span className="px-1.5 py-0.2 text-[9px] bg-cyan-950/80 text-cyan-300 border border-cyan-600/40 rounded tracking-tighter">
+                  v2.4
+                </span>
+              </div>
+              <span className="text-[9px] tracking-wider text-gray-500 uppercase">
+                Combat Telemetry System
+              </span>
+            </div>
+          </Link>
+
+          {/* Navigation Tabs */}
+          <nav className="hidden md:flex items-center gap-2">
+            <Link
+              href="/"
+              className={`relative px-4 py-2 text-xs font-semibold tracking-wider uppercase transition-all duration-200 ${
+                pathname === "/"
+                  ? "text-cyan-300 bg-cyan-950/30 border-b-2 border-cyan-400 shadow-[inset_0_-8px_12px_-8px_rgba(0,255,204,0.3)]"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
+              }`}
+            >
+              Home
+            </Link>
+            <Link
+              href="/leaderboards"
+              className={`relative px-4 py-2 text-xs font-semibold tracking-wider uppercase flex items-center gap-2 transition-all duration-200 ${
+                pathname === "/leaderboards"
+                  ? "text-cyan-300 bg-cyan-950/30 border-b-2 border-cyan-400 shadow-[inset_0_-8px_12px_-8px_rgba(0,255,204,0.3)]"
+                  : "text-gray-400 hover:text-gray-200 hover:bg-white/[0.02]"
+              }`}
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-400" />
+              <span>Leaderboards</span>
+            </Link>
+          </nav>
+        </div>
+
+        {/* Action Controls */}
+        <div className="flex items-center gap-4">
+          <form onSubmit={handleSearch} className="relative hidden lg:flex items-center">
+            <div className="relative flex items-center">
+              <Search className="w-3.5 h-3.5 text-gray-500 absolute left-3 pointer-events-none" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search SteamID64, URL, Persona..."
+                className="w-72 bg-[#080d14] border border-cyan-950 text-gray-200 text-xs pl-9 pr-4 py-2 focus:outline-none focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/30 transition-all font-mono placeholder:text-gray-600"
+              />
+            </div>
+            <button
+              type="submit"
+              className="bg-cyan-950/60 hover:bg-cyan-500 hover:text-black text-cyan-300 border border-l-0 border-cyan-600/40 px-4 py-2 text-xs font-bold tracking-wider transition-all duration-150"
+            >
+              SCAN
+            </button>
+          </form>
+
+          {/* Steam Sign-In Action */}
+          <button
+            onClick={() => alert("Steam OpenID Authentication initialized.")}
+            className="relative group px-4 py-2 text-xs font-bold text-cyan-300 border border-cyan-500/60 bg-gradient-to-r from-cyan-950/50 to-[#080d14] transition-all duration-200 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(0,255,204,0.3)] active:scale-95"
+          >
+            <span className="tracking-widest">SIGN IN</span>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}

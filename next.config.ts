@@ -1,15 +1,12 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "avatars.steamstatic.com" },
+      { protocol: "https", hostname: "community.cloudflare.steamstatic.com" },
+    ],
   },
-  serverExternalPackages: ["steam-user", "globaloffensive", "@doctormckay/steam-crypto"],
 };
 
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  org: "chandigarh-university-09",
-  project: "cs2biodata",
-});
+export default nextConfig;
