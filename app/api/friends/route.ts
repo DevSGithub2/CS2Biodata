@@ -1,130 +1,120 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function chunkArray<T>(array: T[], size: number): T[][] {
+const STEAM_API_KEY = process.env.STEAM_API_KEY || "";
+
+function chunkArray<T>(arr: T[], size = 100): T[][] {
   const chunks: T[][] = [];
-  for (let i = 0; i < array.length; i += size) {
-    chunks.push(array.slice(i, i + size));
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
   }
   return chunks;
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const steamId64 = searchParams.get("steamId64")?.trim();
-  const steamApiKey = process.env.STEAM_API_KEY;
+  const steamId64 = searchParams.get("steamId64");
 
   if (!steamId64) {
-    return NextResponse.json({ success: false, error: "steamId64 is required." }, { status: 400 });
+    return NextResponse.json({ friends: [], error: "Missing steamId64" }, { status: 400 });
   }
 
-  if (!steamApiKey) {
-    return NextResponse.json({ success: false, error: "STEAM_API_KEY is not configured." }, { status: 500 });
+  if (!STEAM_API_KEY) {
+    return NextResponse.json({ friends: [], error: "Steam API key not configured" }, { status: 500 });
   }
 
   try {
-    // 1. Fetch 100% of friends with no truncation
-    const friendsRes = await fetch(
-      `https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=${steamApiKey}&steamid=${steamId64}&relationship=friend`,
-      { next: { revalidate: 60 } }
+    const friendListRes = await fetch(
+      `https://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key=${STEAM_API_KEY}&steamid=${steamId64}&relationship=friend`,
+      { next: { revalidate: 300 } }
     );
 
-    if (!friendsRes.ok) {
-      if (friendsRes.status === 401 || friendsRes.status === 500) {
-        return NextResponse.json({
-          success: false,
-          error: "This Steam profile's friends list is private or unavailable.",
-          isPrivate: true,
-        });
-      }
-      throw new Error(`Failed to fetch friends (Status: ${friendsRes.status})`);
+    if (!friendListRes.ok) {
+      return NextResponse.json({ friends: [], error: "Friends list is private or unavailable." });
     }
 
-    const friendsJson = await friendsRes.json();
-    const friendList: any[] = friendsJson?.friendslist?.friends || [];
+    const friendListData = await friendListRes.json();
+    const friendsRaw: any[] = friendListData?.friendslist?.friends || [];
 
-    if (friendList.length === 0) {
-      return NextResponse.json({
-        success: true,
-        data: { total: 0, bannedCount: 0, friends: [] },
-      });
+    if (friendsRaw.length === 0) {
+      return NextResponse.json({ friends: [] });
     }
 
-    // 2. Process all friends concurrently in chunks of 100 to satisfy Valve's API protocol
-    const batches = chunkArray(friendList, 100);
-    const playersMap = new Map();
-    const bansMap = new Map();
+    const boundedFriends = friendsRaw.slice(0, 5000);
+    const friendSinceMap = new Map<string, number>();
+    boundedFriends.forEach((f) => {
+      friendSinceMap.set(f.steamid, f.friend_since);
+    });
 
-    await Promise.all(
-      batches.map(async (batch) => {
-        const ids = batch.map((f: any) => f.steamid).join(",");
+    const allIds = boundedFriends.map((f) => f.steamid);
+    const idBatches = chunkArray(allIds, 100);
 
-        const [summariesRes, bansRes] = await Promise.all([
-          fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamApiKey}&steamids=${ids}`),
-          fetch(`https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key=${steamApiKey}&steamids=${ids}`),
-        ]);
+    const [summariesResults, bansResults] = await Promise.all([
+      Promise.all(
+        idBatches.map(async (batch) => {
+          const idsCsv = batch.join(",");
+          const res = await fetch(
+            `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${STEAM_API_KEY}&steamids=${idsCsv}`
+          );
+          if (!res.ok) return [];
+          const data = await res.json();
+          return data?.response?.players || [];
+        })
+      ),
+      Promise.all(
+        idBatches.map(async (batch) => {
+          const idsCsv = batch.join(",");
+          const res = await fetch(
+            `https://api.steampowered.com/ISteamUser/GetPlayerBans/v1/?key=${STEAM_API_KEY}&steamids=${idsCsv}`
+          );
+          if (!res.ok) return [];
+          const data = await res.json();
+          return data?.players || [];
+        })
+      ),
+    ]);
 
-        if (summariesRes.ok) {
-          const summariesJson = await summariesRes.json();
-          (summariesJson?.response?.players || []).forEach((p: any) => {
-            playersMap.set(p.steamid, p);
-          });
-        }
+    const allPlayers = summariesResults.flat();
+    const allBans = bansResults.flat();
 
-        if (bansRes.ok) {
-          const bansJson = await bansRes.json();
-          (bansJson?.players || []).forEach((b: any) => {
-            bansMap.set(b.SteamId, b);
-          });
-        }
-      })
-    );
+    const bansMap = new Map<string, any>();
+    allBans.forEach((b) => {
+      bansMap.set(b.SteamId, b);
+    });
 
-    // 3. Assemble and calculate ban telemetry across all friends
-    let bannedCount = 0;
-    const enrichedFriends = friendList.map((f: any) => {
-      const summary = playersMap.get(f.steamid) || {};
-      const banInfo = bansMap.get(f.steamid) || {};
+    const enrichedFriends = allPlayers.map((p: any) => {
+      const banInfo = bansMap.get(p.steamid);
+      const isVacBanned = Boolean(banInfo?.VACBanned || (banInfo?.NumberOfVACBans || 0) > 0);
+      const isCommunityBanned = Boolean(banInfo?.CommunityBanned);
+      const isGameBanned = (banInfo?.NumberOfGameBans || 0) > 0;
+      const isBanned = isVacBanned || isCommunityBanned || isGameBanned;
 
-      const isVacBanned = Boolean(banInfo.VACBanned);
-      const gameBans = banInfo.NumberOfGameBans || 0;
-      const isCommunityBanned = Boolean(banInfo.CommunityBanned);
-      const isBanned = isVacBanned || gameBans > 0 || isCommunityBanned;
+      let banType = "CLEAN";
+      if (isVacBanned) banType = `VAC BAN (${banInfo.DaysSinceLastBan}d ago)`;
+      else if (isGameBanned) banType = `GAME BAN (${banInfo.DaysSinceLastBan}d ago)`;
+      else if (isCommunityBanned) banType = "COMMUNITY BAN";
 
-      if (isBanned) bannedCount++;
+      const friendSince = friendSinceMap.get(p.steamid);
+      const relationship = friendSince
+        ? `Friends since ${new Date(friendSince * 1000).getFullYear()}`
+        : "Friend";
 
       return {
-        steamId64: f.steamid,
-        personaName: summary.personaname || `User (${f.steamid.slice(-4)})`,
-        avatar: summary.avatarfull || summary.avatar || "https://api.dicebear.com/7.x/identicon/svg?seed=" + f.steamid,
-        profileUrl: summary.profileurl || `https://steamcommunity.com/profiles/${f.steamid}`,
-        relationshipSince: f.friend_since ? f.friend_since * 1000 : null,
+        steamid: p.steamid,
+        personaname: p.personaname || "Unknown Operative",
+        avatar: p.avatarfull || p.avatarmedium || p.avatar || "",
+        profileurl: p.profileurl || `https://steamcommunity.com/profiles/${p.steamid}`,
         isBanned,
+        banType,
         vacBanned: isVacBanned,
-        vacBanCount: banInfo.NumberOfVACBans || 0,
-        gameBanCount: gameBans,
         communityBanned: isCommunityBanned,
-        daysSinceLastBan: banInfo.DaysSinceLastBan || 0,
-        economyBan: banInfo.EconomyBan || "none",
+        relationship,
       };
     });
 
-    // 4. Sort banned friends first, followed alphabetically
-    enrichedFriends.sort((a: any, b: any) => {
-      if (a.isBanned === b.isBanned) {
-        return a.personaName.localeCompare(b.personaName);
-      }
-      return a.isBanned ? -1 : 1;
-    });
+    enrichedFriends.sort((a, b) => (b.isBanned ? 1 : 0) - (a.isBanned ? 1 : 0));
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        total: enrichedFriends.length,
-        bannedCount,
-        friends: enrichedFriends,
-      },
-    });
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ friends: enrichedFriends });
+  } catch (err: any) {
+    return NextResponse.json({ friends: [], error: err.message }, { status: 500 });
   }
 }

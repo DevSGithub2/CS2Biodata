@@ -4,6 +4,16 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, ChevronRight } from "lucide-react";
 
+// Verified Pro SteamID64 Registry
+const PRO_PLAYERS = [
+  { name: "ZywOo", steamId: "76561198058595732" },
+  { name: "m0NESY", steamId: "76561198305713431" },
+  { name: "donk", steamId: "76561198322699920" },
+  { name: "s1mple", steamId: "76561198034202275" },
+  { name: "ropz", steamId: "76561198121220486" },
+  { name: "b1t", steamId: "76561198341448494" },
+];
+
 export function SearchBar() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,9 +26,9 @@ export function SearchBar() {
     router.push(`/player/${encodeURIComponent(searchQuery.trim())}`);
   };
 
-  const handleQuickLoad = (vanity: string) => {
-    setSearchQuery(vanity);
-    router.push(`/player/${vanity}`);
+  const handleQuickLoad = (steamId: string) => {
+    setIsSubmitting(true);
+    router.push(`/player/${steamId}`);
   };
 
   return (
@@ -54,18 +64,11 @@ export function SearchBar() {
         <span className="uppercase text-gray-500 font-bold tracking-wider text-[11px] mr-1">
           OPERATIVE PROFILES:
         </span>
-        {[
-          { name: "ZywOo", id: "ZywOo" },
-          { name: "m0NESY", id: "m0NESY" },
-          { name: "donk", id: "donk666" },
-          { name: "s1mple", id: "s1mple" },
-          { name: "ropz", id: "ropz" },
-          { name: "b1t", id: "b1t" },
-        ].map((pro) => (
+        {PRO_PLAYERS.map((pro) => (
           <button
             key={pro.name}
             type="button"
-            onClick={() => handleQuickLoad(pro.id)}
+            onClick={() => handleQuickLoad(pro.steamId)}
             className="px-2.5 py-1 bg-[#070d14] border border-cyan-950 hover:border-cyan-500/60 text-gray-300 hover:text-cyan-300 transition-all duration-150 rounded text-[11px] font-mono hover:shadow-[0_0_10px_rgba(0,255,204,0.15)]"
           >
             {pro.name}
