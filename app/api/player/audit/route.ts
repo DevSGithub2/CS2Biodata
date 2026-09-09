@@ -28,13 +28,17 @@ export async function GET(request: Request) {
         updatedAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
       });
       if (cached) {
-        return NextResponse.json({ ...cached, source: "mongodb_cache" });
+        return NextResponse.json({
+          ...cached,
+          source: "mongodb_cache",
+          cacheAgeSeconds: Math.round((Date.now() - new Date(cached.updatedAt).getTime()) / 1000)
+        });
       }
     } catch (dbErr) {
       console.warn("[MongoDB Read Miss]", dbErr);
     }
 
-    // 2. Fetch external APIs in parallel
+    // 2. Parallel Live Ingestion
     const [steamProfile, faceitData, friendAudit, rawInventory, matchHistory] = await Promise.all([
       fetchSteamProfileAndBans(steamId64),
       fetchFaceitStats(steamId64),
@@ -43,7 +47,7 @@ export async function GET(request: Request) {
       getPlayerMatchHistory(steamId64, 5)
     ]);
 
-    // 3. Enrich Inventory with market pricing
+    // 3. Price inventory items
     const pricedInventory = await enrichInventoryWithPrices(steamId64, rawInventory.items);
 
     const auditPayload = {
@@ -69,7 +73,10 @@ export async function GET(request: Request) {
       ).catch(() => {});
     }
 
-    return NextResponse.json({ ...auditPayload, source: "live_aggregated" });
+    return NextResponse.json({
+      ...auditPayload,
+      source: "live_aggregated"
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
