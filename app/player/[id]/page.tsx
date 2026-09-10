@@ -8,6 +8,7 @@ import { Footer } from "@/components/home/Footer";
 import { DossierToolbar } from "@/components/player/DossierToolbar";
 import { DossierHero } from "@/components/player/DossierHero";
 import { DossierTabs } from "@/components/player/DossierTabs";
+import { ValveAuthBanner } from "@/components/player/ValveAuthBanner";
 import { Loader2, AlertTriangle } from "lucide-react";
 
 export default function PlayerDossierPage() {
@@ -75,6 +76,9 @@ export default function PlayerDossierPage() {
           <>
             {/* Primary Hero Header */}
             <DossierHero data={data} />
+
+            {/* Valve Match Auth & Sync Banner */}
+            <ValveAuthBanner currentProfileSteamId={data?.player?.steamId || id} />
 
             {/* Complete 6-Tab Modular Sub-System */}
             <DossierTabs data={data} />

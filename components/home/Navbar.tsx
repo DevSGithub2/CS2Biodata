@@ -21,7 +21,6 @@ export function Navbar() {
   return (
     <header className="relative z-50 w-full border-b border-cyan-900/40 bg-[#04070a]/90 backdrop-blur-xl">
       <div className="max-w-[1700px] mx-auto px-6 sm:px-12 h-20 flex items-center justify-between gap-6 font-mono">
-        
         {/* Brand Group */}
         <div className="flex items-center gap-10">
           <Link href="/" className="flex items-center gap-3.5 group">
@@ -82,21 +81,15 @@ export function Navbar() {
                 className="w-72 bg-[#080d14] border border-cyan-950 text-gray-200 text-xs pl-9 pr-4 py-2 focus:outline-none focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/30 transition-all font-mono placeholder:text-gray-600"
               />
             </div>
-            <button
-              type="submit"
-              className="bg-cyan-950/60 hover:bg-cyan-500 hover:text-black text-cyan-300 border border-l-0 border-cyan-600/40 px-4 py-2 text-xs font-bold tracking-wider transition-all duration-150"
-            >
-              SCAN
-            </button>
           </form>
 
-          {/* Steam Sign-In Action */}
-          <button
-            onClick={() => alert("Steam OpenID Authentication initialized.")}
-            className="relative group px-4 py-2 text-xs font-bold text-cyan-300 border border-cyan-500/60 bg-gradient-to-r from-cyan-950/50 to-[#080d14] transition-all duration-200 hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(0,255,204,0.3)] active:scale-95"
+          {/* Steam Sign In Link */}
+          <a
+            href="/api/auth/steam/login"
+            className="flex items-center gap-2 rounded-lg bg-[#1a243d] border border-sky-500/30 px-3.5 py-1.5 text-xs font-bold text-sky-400 hover:bg-sky-500/20 hover:border-sky-400 transition cursor-pointer"
           >
             <span className="tracking-widest">SIGN IN</span>
-          </button>
+          </a>
         </div>
       </div>
     </header>
