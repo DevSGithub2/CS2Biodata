@@ -1,102 +1,274 @@
-// Official Valve CS2 & FACEIT Asset Pipeline
-
-export interface MapMeta {
-  name: string;
-  code: string;
-  icon: string;
-  gradient: string;
+// -------------------------------------------------------------
+// 1. FACEIT Skill Levels & Elo Thresholds
+// -------------------------------------------------------------
+export interface FaceitLevelMeta {
+  level: number | "Challenger";
+  minElo: number;
+  maxElo: number;
+  color: string;
+  percent: number;
+  label: string;
+  badgePath: string;
 }
 
-export const OFFICIAL_MAPS: Record<string, MapMeta> = {
-  mirage: {
-    name: "Mirage",
-    code: "de_mirage",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-amber-950 via-amber-900 to-stone-900",
-  },
-  inferno: {
-    name: "Inferno",
-    code: "de_inferno",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-red-950 via-orange-950 to-stone-900",
-  },
-  dust2: {
-    name: "Dust II",
-    code: "de_dust2",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-yellow-950 via-amber-950 to-stone-900",
-  },
-  nuke: {
-    name: "Nuke",
-    code: "de_nuke",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-sky-950 via-blue-950 to-stone-900",
-  },
-  ancient: {
-    name: "Ancient",
-    code: "de_ancient",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-emerald-950 via-teal-950 to-stone-900",
-  },
-  anubis: {
-    name: "Anubis",
-    code: "de_anubis",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-yellow-900 via-stone-900 to-black",
-  },
-  vertigo: {
-    name: "Vertigo",
-    code: "de_vertigo",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-blue-950 via-slate-900 to-black",
-  },
-  overpass: {
-    name: "Overpass",
-    code: "de_overpass",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-green-950 via-stone-900 to-black",
-  },
-  train: {
-    name: "Train",
-    code: "de_train",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-slate-900 via-zinc-900 to-black",
-  },
-  cache: {
-    name: "Cache",
-    code: "de_cache",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-cyan-950 via-slate-900 to-black",
-  },
-};
+export const FACEIT_LEVELS: FaceitLevelMeta[] = [
+  { level: 1, minElo: 100, maxElo: 500, color: "#9e9e9e", percent: 10, label: "1", badgePath: "/assets/ranks/faceit/level-1.svg" },
+  { level: 2, minElo: 501, maxElo: 750, color: "#1ce400", percent: 20, label: "2", badgePath: "/assets/ranks/faceit/level-2.svg" },
+  { level: 3, minElo: 751, maxElo: 900, color: "#1ce400", percent: 30, label: "3", badgePath: "/assets/ranks/faceit/level-3.svg" },
+  { level: 4, minElo: 901, maxElo: 1050, color: "#ffc700", percent: 40, label: "4", badgePath: "/assets/ranks/faceit/level-4.svg" },
+  { level: 5, minElo: 1051, maxElo: 1200, color: "#ffc700", percent: 50, label: "5", badgePath: "/assets/ranks/faceit/level-5.svg" },
+  { level: 6, minElo: 1201, maxElo: 1350, color: "#ffc700", percent: 60, label: "6", badgePath: "/assets/ranks/faceit/level-6.svg" },
+  { level: 7, minElo: 1351, maxElo: 1530, color: "#ffc700", percent: 70, label: "7", badgePath: "/assets/ranks/faceit/level-7.svg" },
+  { level: 8, minElo: 1531, maxElo: 1750, color: "#ff5500", percent: 80, label: "8", badgePath: "/assets/ranks/faceit/level-8.svg" },
+  { level: 9, minElo: 1751, maxElo: 2000, color: "#ff5500", percent: 90, label: "9", badgePath: "/assets/ranks/faceit/level-9.svg" },
+  { level: 10, minElo: 2001, maxElo: Infinity, color: "#fe1f00", percent: 100, label: "10", badgePath: "/assets/ranks/faceit/level-10.svg" },
+  { level: "Challenger", minElo: 2001, maxElo: Infinity, color: "#fe1f00", percent: 100, label: "C", badgePath: "/assets/ranks/faceit/challenger.svg" }
+];
 
-export function getOfficialMapAsset(rawName: string): MapMeta {
-  const norm = (rawName || "").toLowerCase().trim().replace(/^de_/, "").replace(/\s+/g, "").replace(/ii$/, "2");
+export function getOfficialFaceitBadge(levelOrElo: number | string): FaceitLevelMeta {
+  const num = Number(levelOrElo) || 8;
+  if (num > 100) {
+    for (let i = FACEIT_LEVELS.length - 2; i >= 0; i--) {
+      if (num >= FACEIT_LEVELS[i].minElo) {
+        return FACEIT_LEVELS[i];
+      }
+    }
+    return FACEIT_LEVELS[0];
+  }
+  const match = FACEIT_LEVELS.find((l) => l.level === num);
+  return match || FACEIT_LEVELS[7];
+}
 
-  if (norm.includes("dust")) return OFFICIAL_MAPS.dust2;
-  if (norm.includes("mirage")) return OFFICIAL_MAPS.mirage;
-  if (norm.includes("inferno")) return OFFICIAL_MAPS.inferno;
-  if (norm.includes("nuke")) return OFFICIAL_MAPS.nuke;
-  if (norm.includes("ancient")) return OFFICIAL_MAPS.ancient;
-  if (norm.includes("anubis")) return OFFICIAL_MAPS.anubis;
-  if (norm.includes("vertigo")) return OFFICIAL_MAPS.vertigo;
-  if (norm.includes("overpass")) return OFFICIAL_MAPS.overpass;
-  if (norm.includes("train")) return OFFICIAL_MAPS.train;
-  if (norm.includes("cache")) return OFFICIAL_MAPS.cache;
+// -------------------------------------------------------------
+// 2. CS2 Premier Rating Tiers & Tier Colors
+// -------------------------------------------------------------
+export interface PremierTierMeta {
+  tierId: string;
+  minRating: number;
+  maxRating: number;
+  label: string;
+  colorHex: string;
+  bgGradient: string;
+  borderColor: string;
+  badgePath: string;
+  // Legacy aliases for DossierHero compatibility
+  color?: string;
+  bg?: string;
+  border?: string;
+  badge?: string;
+}
 
+export const PREMIER_TIERS: PremierTierMeta[] = [
+  {
+    tierId: "sub5k",
+    minRating: 0,
+    maxRating: 4999,
+    label: "Below 5,000",
+    colorHex: "#b0b0b0",
+    bgGradient: "from-[#41474d] to-[#26292d]",
+    borderColor: "#8a939d",
+    badgePath: "/assets/ranks/premier/sub5k.svg"
+  },
+  {
+    tierId: "tier1",
+    minRating: 5000,
+    maxRating: 9999,
+    label: "5,000 - 9,999",
+    colorHex: "#85c2ff",
+    bgGradient: "from-[#274a69] to-[#14283b]",
+    borderColor: "#4b8bc4",
+    badgePath: "/assets/ranks/premier/tier1.svg"
+  },
+  {
+    tierId: "tier2",
+    minRating: 10000,
+    maxRating: 14999,
+    label: "10,000 - 14,999",
+    colorHex: "#4887e0",
+    bgGradient: "from-[#1b3c73] to-[#0f1f40]",
+    borderColor: "#2d5da1",
+    badgePath: "/assets/ranks/premier/tier2.svg"
+  },
+  {
+    tierId: "tier3",
+    minRating: 15000,
+    maxRating: 19999,
+    label: "15,000 - 19,999",
+    colorHex: "#b366e6",
+    bgGradient: "from-[#4c236e] to-[#270f3b]",
+    borderColor: "#7a389f",
+    badgePath: "/assets/ranks/premier/tier3.svg"
+  },
+  {
+    tierId: "tier4",
+    minRating: 20000,
+    maxRating: 24999,
+    label: "20,000 - 24,999",
+    colorHex: "#eb34c2",
+    bgGradient: "from-[#6b1458] to-[#38092d]",
+    borderColor: "#ac158b",
+    badgePath: "/assets/ranks/premier/tier4.svg"
+  },
+  {
+    tierId: "tier5",
+    minRating: 25000,
+    maxRating: 29999,
+    label: "25,000 - 29,999",
+    colorHex: "#f04349",
+    bgGradient: "from-[#73181c] to-[#3b0c0e]",
+    borderColor: "#b72025",
+    badgePath: "/assets/ranks/premier/tier5.svg"
+  },
+  {
+    tierId: "tier6",
+    minRating: 30000,
+    maxRating: Infinity,
+    label: "30,000+",
+    colorHex: "#ffdb38",
+    bgGradient: "from-[#806613] to-[#423408]",
+    borderColor: "#cca01d",
+    badgePath: "/assets/ranks/premier/tier6.svg"
+  }
+];
+
+export function getPremierTier(rating: number | string): PremierTierMeta {
+  const num = Number(rating);
+  if (isNaN(num)) {
+    return {
+      tierId: "unranked",
+      minRating: 0,
+      maxRating: 0,
+      label: "UNRANKED",
+      colorHex: "#6c757d",
+      bgGradient: "from-[#1e2229] to-[#12151b]",
+      borderColor: "#3a414e",
+      badgePath: "/assets/ranks/premier/unranked.svg",
+      color: "#6c757d",
+      bg: "from-[#1e2229] to-[#12151b]",
+      border: "#3a414e",
+      badge: "/assets/ranks/premier/unranked.svg",
+    };
+  }
+  for (let i = PREMIER_TIERS.length - 1; i >= 0; i--) {
+    if (num >= PREMIER_TIERS[i].minRating) {
+      const t = PREMIER_TIERS[i];
+      return {
+        ...t,
+        color: t.colorHex,
+        bg: t.bgGradient,
+        border: t.borderColor,
+        badge: t.badgePath,
+      };
+    }
+  }
+  const t0 = PREMIER_TIERS[0];
   return {
-    name: rawName || "Competitive Map",
-    code: "de_map",
-    icon: "https://icons.veryicon.com/png/o/miscellaneous/game-interface-1/map-18.png",
-    gradient: "from-slate-900 to-black",
+    ...t0,
+    color: t0.colorHex,
+    bg: t0.bgGradient,
+    border: t0.borderColor,
+    badge: t0.badgePath,
   };
 }
 
-export function getOfficialFaceitBadge(level: number | string) {
-  const lvl = Number(level) || 8;
-  return { bg: "#FF5500", text: "#000000", label: String(lvl) };
+// -------------------------------------------------------------
+// 3. Valve CS2 Competitive Skill Groups
+// -------------------------------------------------------------
+export interface CompetitiveRankMeta {
+  id: number;
+  name: string;
+  shortName: string;
+  category: "Silver" | "Gold Nova" | "Master Guardian" | "Elite";
+  badgePath: string;
 }
 
-export const OFFICIAL_SKILL_GROUPS: Record<number, { name: string; icon: string }> = {
-  0: { name: "Unranked", icon: "" },
+export const COMPETITIVE_RANKS: CompetitiveRankMeta[] = [
+  { id: 1, name: "Silver I", shortName: "S1", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup1.svg" },
+  { id: 2, name: "Silver II", shortName: "S2", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup2.svg" },
+  { id: 3, name: "Silver III", shortName: "S3", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup3.svg" },
+  { id: 4, name: "Silver IV", shortName: "S4", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup4.svg" },
+  { id: 5, name: "Silver Elite", shortName: "SE", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup5.svg" },
+  { id: 6, name: "Silver Elite Master", shortName: "SEM", category: "Silver", badgePath: "/assets/ranks/competitive/skillgroup6.svg" },
+  { id: 7, name: "Gold Nova I", shortName: "GN1", category: "Gold Nova", badgePath: "/assets/ranks/competitive/skillgroup7.svg" },
+  { id: 8, name: "Gold Nova II", shortName: "GN2", category: "Gold Nova", badgePath: "/assets/ranks/competitive/skillgroup8.svg" },
+  { id: 9, name: "Gold Nova III", shortName: "GN3", category: "Gold Nova", badgePath: "/assets/ranks/competitive/skillgroup9.svg" },
+  { id: 10, name: "Gold Nova Master", shortName: "GNM", category: "Gold Nova", badgePath: "/assets/ranks/competitive/skillgroup10.svg" },
+  { id: 11, name: "Master Guardian I", shortName: "MG1", category: "Master Guardian", badgePath: "/assets/ranks/competitive/skillgroup11.svg" },
+  { id: 12, name: "Master Guardian II", shortName: "MG2", category: "Master Guardian", badgePath: "/assets/ranks/competitive/skillgroup12.svg" },
+  { id: 13, name: "Master Guardian Elite", shortName: "MGE", category: "Master Guardian", badgePath: "/assets/ranks/competitive/skillgroup13.svg" },
+  { id: 14, name: "Distinguished Master Guardian", shortName: "DMG", category: "Master Guardian", badgePath: "/assets/ranks/competitive/skillgroup14.svg" },
+  { id: 15, name: "Legendary Eagle", shortName: "LE", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup15.svg" },
+  { id: 16, name: "Legendary Eagle Master", shortName: "LEM", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup16.svg" },
+  { id: 17, name: "Supreme Master First Class", shortName: "SMFC", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup17.svg" },
+  { id: 18, name: "The Global Elite", shortName: "GE", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup18.svg" }
+];
+
+export function getCompetitiveRank(idOrName: number | string): CompetitiveRankMeta | null {
+  if (typeof idOrName === "number") {
+    return COMPETITIVE_RANKS.find((r) => r.id === idOrName) || null;
+  }
+  const clean = idOrName.toLowerCase().replace(/[\s_-]+/g, "");
+  return COMPETITIVE_RANKS.find((r) => r.name.toLowerCase().replace(/[\s_-]+/g, "") === clean || r.shortName.toLowerCase() === clean) || null;
+}
+
+// -------------------------------------------------------------
+// 4. CS2 Official Map Asset Registry & Resolvers
+// -------------------------------------------------------------
+export interface MapMeta {
+  name: string;
+  code: string;
+  imagePath: string;
+}
+
+export const OFFICIAL_MAPS: Record<string, MapMeta> = {
+  mirage: { name: "Mirage", code: "de_mirage", imagePath: "/assets/maps/mirage.png" },
+  inferno: { name: "Inferno", code: "de_inferno", imagePath: "/assets/maps/inferno.png" },
+  dust2: { name: "Dust II", code: "de_dust2", imagePath: "/assets/maps/dust2.png" },
+  nuke: { name: "Nuke", code: "de_nuke", imagePath: "/assets/maps/nuke.png" },
+  anubis: { name: "Anubis", code: "de_anubis", imagePath: "/assets/maps/anubis.png" },
+  ancient: { name: "Ancient", code: "de_ancient", imagePath: "/assets/maps/ancient.png" },
+  vertigo: { name: "Vertigo", code: "de_vertigo", imagePath: "/assets/maps/vertigo.png" },
+  overpass: { name: "Overpass", code: "de_overpass", imagePath: "/assets/maps/overpass.png" },
+  train: { name: "Train", code: "de_train", imagePath: "/assets/maps/train.png" },
+  office: { name: "Office", code: "cs_office", imagePath: "/assets/maps/office.png" },
+  italy: { name: "Italy", code: "cs_italy", imagePath: "/assets/maps/italy.png" }
 };
+
+export function getOfficialMapAsset(rawName: string): MapMeta {
+  const norm = (rawName || "").toLowerCase().trim().replace(/^de_|^cs_/, "").replace(/\s+/g, "").replace(/ii$/, "2");
+  return OFFICIAL_MAPS[norm] || OFFICIAL_MAPS.mirage;
+}
+
+export function getMapThumbnail(mapName: string): string {
+  const clean = (mapName || "")
+    .toLowerCase()
+    .trim()
+    .replace(/^de_|^cs_/, "")
+    .replace(/\s+/g, "")
+    .replace(/ii$/, "2");
+
+  const validMaps = [
+    "mirage",
+    "inferno",
+    "dust2",
+    "nuke",
+    "anubis",
+    "ancient",
+    "vertigo",
+    "overpass",
+    "train",
+    "office",
+    "italy",
+  ];
+
+  if (validMaps.includes(clean)) {
+    return `/assets/maps/${clean}.png`;
+  }
+  return "/assets/maps/mirage.png";
+}
+
+
+// Aliases for compatibility across components
+export const OFFICIAL_SKILL_GROUPS = COMPETITIVE_RANKS;
+export const SKILL_GROUPS = COMPETITIVE_RANKS;
+export const CS2_RANKS = COMPETITIVE_RANKS;

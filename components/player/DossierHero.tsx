@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { getOfficialFaceitBadge, getPremierTier } from "@/lib/cs2-assets";
 import { ExternalLink, Calendar, Database, X, Copy, Check } from "lucide-react";
 
 // Official CS2 Premier Medal Logo (Vector)
@@ -66,26 +67,7 @@ function ValveVacShieldIcon({ className = "w-5 h-5", isClean = true }: { classNa
   );
 }
 
-// Premier CS2 Official Rating Tiers
-function getPremierTier(rating?: number) {
-  if (!rating || rating === 0) {
-    return {
-      label: "UNRANKED",
-      color: "text-gray-400",
-      hex: "#9CA3AF",
-      border: "border-white/[0.08]",
-      bg: "bg-white/[0.02]",
-      badge: "bg-white/[0.06] text-gray-400",
-    };
-  }
-  if (rating < 5000) return { label: "COMMON", color: "text-gray-300", hex: "#D1D5DB", border: "border-gray-500/40", bg: "bg-gray-500/[0.05]", badge: "bg-gray-600/30 text-gray-300" };
-  if (rating < 10000) return { label: "CHALLENGER", color: "text-sky-300", hex: "#7DD3FC", border: "border-sky-500/30", bg: "bg-sky-500/[0.05]", badge: "bg-sky-500/20 text-sky-300" };
-  if (rating < 15000) return { label: "GUARDIAN", color: "text-blue-300", hex: "#93C5FD", border: "border-blue-500/30", bg: "bg-blue-500/[0.05]", badge: "bg-blue-500/20 text-blue-300" };
-  if (rating < 20000) return { label: "MASTER", color: "text-purple-300", hex: "#D8B4FE", border: "border-purple-500/30", bg: "bg-purple-500/[0.05]", badge: "bg-purple-500/20 text-purple-300" };
-  if (rating < 25000) return { label: "ELITE", color: "text-pink-300", hex: "#F472B6", border: "border-pink-500/30", bg: "bg-pink-500/[0.05]", badge: "bg-pink-500/20 text-pink-300" };
-  if (rating < 30000) return { label: "LEGENDARY", color: "text-rose-400", hex: "#FB7185", border: "border-rose-500/30", bg: "bg-rose-500/[0.05]", badge: "bg-rose-500/20 text-rose-300" };
-  return { label: "WORLD CLASS", color: "text-amber-300", hex: "#FCD34D", border: "border-amber-400/40", bg: "bg-amber-500/[0.08]", badge: "bg-amber-400/20 text-amber-300" };
-}
+
 
 // Official FACEIT Level Badge Color Matrix
 function getFaceitBadge(level?: number) {
@@ -258,7 +240,7 @@ export function DossierHero({ data }: { data: any }) {
             {/* Premier Official CS2 Medal Badge */}
             <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${premierTier.border} ${premierTier.bg} transition-all min-w-[155px]`}>
               <div className="w-9 h-9 rounded-md bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0">
-                <CS2PremierIcon className="w-5 h-5" color={premierTier.hex} />
+                <img src={premierTier.badgePath} alt={premierTier.label} className="h-6 w-auto object-contain" />
               </div>
 
               <div>
