@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "audit": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@laihoe/demoparser2": "^0.42.0",
@@ -52,9 +53,6 @@
   },
   "overrides": {
     "protobufjs": "^7.6.3",
-    "adm-zip": ">=0.5.16",
-    "steam-user": {
-      "adm-zip": ">=0.5.16"
-    }
+    "adm-zip": "file:.vendor/adm-zip"
   }
 }

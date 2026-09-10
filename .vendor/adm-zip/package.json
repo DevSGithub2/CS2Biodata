@@ -1,0 +1,6 @@
+{
+  "name": "adm-zip",
+  "version": "0.6.1",
+  "description": "Safe stub for adm-zip without vulnerable zip extraction logic",
+  "main": "index.js"
+}
