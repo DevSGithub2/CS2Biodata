@@ -1,5 +1,6 @@
 "use client";
 
+import { FaceitTab } from "@/components/player/FaceitTab";
 import { getOfficialMapAsset, getOfficialFaceitBadge, OFFICIAL_SKILL_GROUPS } from "@/lib/cs2-assets";
 import React, { useState, useEffect, useMemo } from "react";
 import { 
@@ -775,18 +776,7 @@ export function DossierTabs({ data }: { data: any }) {
           </div>
         )}
 
-        {activeTab === "faceit" && (
-          <div className="rounded-xl border border-white/[0.08] bg-[#0d1117]/80 p-8 font-mono text-center">
-            <div className="flex flex-col items-center justify-center gap-2 py-20 text-gray-400">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#FF5500]">
-                FACEIT Telemetry
-              </span>
-              <p className="text-[11px] text-gray-500">
-                Clean workspace ready for rebuilding.
-              </p>
-            </div>
-          </div>
-        )}
+        {activeTab === "faceit" && <FaceitTab data={data} />}
 
         {activeTab === "valve" && (
           <div className="rounded-lg bg-[#070b12]/95 border border-white/[0.08] p-6 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
