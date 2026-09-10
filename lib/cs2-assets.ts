@@ -126,7 +126,7 @@ export const COMPETITIVE_RANKS: CompetitiveRankMeta[] = [
   { id: 14, name: "Distinguished Master Guardian", shortName: "DMG", category: "Master Guardian", badgePath: "/assets/ranks/competitive/skillgroup14.svg"},
   { id: 15, name: "Legendary Eagle", shortName: "LE", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup15.svg" },
   { id: 16, name: "Legendary Eagle Master", shortName: "LEM", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup16.svg" },
-  { id: 17, name: "Supreme Master First Class", shortName: "SMFC", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup17.svg" },
+  { id: 17, name: "Supreme Master Class", shortName: "SMFC", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup17.svg" },
   { id: 18, name: "The Global Elite", shortName: "GE", category: "Elite", badgePath: "/assets/ranks/competitive/skillgroup18.svg" }
 ];
 
@@ -139,17 +139,18 @@ export interface MapMeta {
 }
 
 export const OFFICIAL_MAPS: Record<string, MapMeta> = {
-  mirage: { name: "Mirage", code: "de_mirage", imagePath: "/maps/de_mirage.svg" },
+  mirage: { name: "Mirage", code: "de_mirage", imagePath: "/maps/de_mirage.png" },
   inferno: { name: "Inferno", code: "de_inferno", imagePath: "/maps/de_inferno.png" },
-  dust2: { name: "Dust II", code: "de_dust2", imagePath: "/maps/de_dust2.svg" },
-  nuke: { name: "Nuke", code: "de_nuke", imagePath: "/maps/de_nuke.svg" },
-  anubis: { name: "Anubis", code: "de_anubis", imagePath: "/maps/de_anubis.svg" },
-  ancient: { name: "Ancient", code: "de_ancient", imagePath: "/maps/de_ancient.svg" },
-  vertigo: { name: "Vertigo", code: "de_vertigo", imagePath: "/maps/de_vertigo.svg" },
+  dust2: { name: "Dust II", code: "de_dust2", imagePath: "/maps/de_dust2.png" },
+  nuke: { name: "Nuke", code: "de_nuke", imagePath: "/maps/de_nuke.png" },
+  anubis: { name: "Anubis", code: "de_anubis", imagePath: "/maps/de_anubis.png" },
+  ancient: { name: "Ancient", code: "de_ancient", imagePath: "/maps/de_ancient.png" },
+  vertigo: { name: "Vertigo", code: "de_vertigo", imagePath: "/maps/de_vertigo.png" },
   overpass: { name: "Overpass", code: "de_overpass", imagePath: "/maps/de_overpass.png" },
   train: { name: "Train", code: "de_train", imagePath: "/maps/de_train.png" },
-  office: { name: "Office", code: "cs_office", imagePath: "/maps/cs_office.svg" },
-  italy: { name: "Italy", code: "cs_italy", imagePath: "/maps/cs_italy.svg" }
+  cache: { name: "Cache", code: "de_cache", imagePath: "/maps/de_cache.png" },
+  office: { name: "Office", code: "cs_office", imagePath: "/maps/cs_office.png" },
+  italy: { name: "Italy", code: "cs_italy", imagePath: "/maps/cs_italy.png" }
 };
 
 export function getOfficialMapAsset(rawName: string): MapMeta {
@@ -166,19 +167,20 @@ export function getMapThumbnail(mapName: string): string {
     .replace(/ii$/, "2");
 
   const mapFiles: Record<string, string> = {
-    mirage: "/maps/de_mirage.svg",
-    dust2: "/maps/de_dust2.svg",
+    mirage: "/maps/de_mirage.png",
+    dust2: "/maps/de_dust2.png",
+    dust: "/maps/de_dust2.png",
     inferno: "/maps/de_inferno.png",
-    vertigo: "/maps/de_vertigo.svg",
-    nuke: "/maps/de_nuke.svg",
-    anubis: "/maps/de_anubis.svg",
-    ancient: "/maps/de_ancient.svg",
+    vertigo: "/maps/de_vertigo.png",
+    nuke: "/maps/de_nuke.png",
+    anubis: "/maps/de_anubis.png",
+    ancient: "/maps/de_ancient.png",
     cache: "/maps/de_cache.png",
     overpass: "/maps/de_overpass.png",
     train: "/maps/de_train.png",
-    office: "/maps/cs_office.svg",
-    italy: "/maps/cs_italy.svg",
+    office: "/maps/cs_office.png",
+    italy: "/maps/cs_italy.png",
   };
 
-  return mapFiles[clean] || "/maps/de_mirage.svg";
+  return mapFiles[clean] || "/maps/de_mirage.png";
 }

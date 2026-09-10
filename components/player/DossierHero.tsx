@@ -5,15 +5,15 @@ import { getOfficialFaceitBadge, getPremierTier } from "@/lib/cs2-assets";
 import { ExternalLink, Calendar, Database, X, Copy, Check } from "lucide-react";
 
 // Official CS2 Premier Medal Logo (Vector)
-function CS2PremierIcon({ className = "w-5 h-5", color = "currentColor" }: { className?: string; color?: string }) {
+function CS2PremierIcon({ className = "w-4 h-4", color = "#ffdb38" }: { className?: string; color?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
       <path
         d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
         fill={color}
-        fillOpacity="0.2"
+        fillOpacity="0.25"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -24,7 +24,7 @@ function CS2PremierIcon({ className = "w-5 h-5", color = "currentColor" }: { cla
 }
 
 // Official FACEIT Chevron Logo (Vector)
-function FaceitLogoIcon({ className = "w-4 h-4" }: { className?: string }) {
+function FaceitLogoIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="#FF5500" className={className}>
       <path d="M23.999 2.001c-.027-.378-.291-.7-.674-.823-.384-.123-.807-.024-1.091.254L.373 22.31c-.347.34-.407.876-.145 1.282.261.406.748.591 1.22.463L23.473 18.1c.334-.092.585-.357.653-.695.068-.337-.048-.686-.303-.912l-8.629-7.657L23.8 2.593c.139-.164.208-.378.199-.592z" />
@@ -65,17 +65,6 @@ function ValveVacShieldIcon({ className = "w-5 h-5", isClean = true }: { classNa
       )}
     </svg>
   );
-}
-
-
-
-// Official FACEIT Level Badge Color Matrix
-function getFaceitBadge(level?: number) {
-  if (!level) return { bg: "bg-white/[0.06]", text: "text-gray-400", border: "border-white/[0.08]" };
-  if (level <= 3) return { bg: "bg-[#4B6B18]", text: "text-white", border: "border-[#628A20]" };
-  if (level <= 7) return { bg: "bg-[#BF7A0A]", text: "text-white", border: "border-[#D98E11]" };
-  if (level <= 9) return { bg: "bg-[#B84507]", text: "text-white", border: "border-[#D6540D]" };
-  return { bg: "bg-[#A61818]", text: "text-white", border: "border-[#D42222] shadow-[0_0_10px_rgba(212,34,34,0.4)]" };
 }
 
 export function DossierHero({ data }: { data: any }) {
@@ -156,8 +145,11 @@ export function DossierHero({ data }: { data: any }) {
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
+  // Resolve Official Premier Tier & Faceit Badge
+  const isPremierRanked = typeof premier?.rating === "number" && premier.rating > 0;
   const premierTier = getPremierTier(premier?.rating);
-  const faceitStyle = getFaceitBadge(faceit?.skillLevel);
+  const faceitLevelOrElo = faceit?.skillLevel || faceit?.elo || 8;
+  const faceitBadge = getOfficialFaceitBadge(faceitLevelOrElo);
 
   return (
     <>
@@ -170,9 +162,8 @@ export function DossierHero({ data }: { data: any }) {
 
         <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
           
-          {/* 1. Left: Refined Avatar + Unified Action Layout */}
+          {/* 1. Left: Avatar + Unified Action Layout */}
           <div className="flex items-center gap-4 text-left w-full lg:w-auto">
-            {/* Avatar Frame with Beveled Corners */}
             <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-lg border border-white/[0.14] overflow-hidden bg-black/50 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.5)] ring-1 ring-cyan-500/10">
               {avatar ? (
                 <img src={avatar} alt={personaName} className="w-full h-full object-cover" />
@@ -183,7 +174,6 @@ export function DossierHero({ data }: { data: any }) {
 
             {/* Name + Side-by-Side Action Strip + Date */}
             <div className="flex flex-col justify-center gap-2 min-w-0">
-              {/* Row 1: Name + Flag */}
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-[260px] leading-none">
                   {personaName}
@@ -203,7 +193,7 @@ export function DossierHero({ data }: { data: any }) {
                 )}
               </div>
 
-              {/* Row 2: Unified Action Strip (Side-by-Side) */}
+              {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDrawer(true)}
@@ -224,7 +214,6 @@ export function DossierHero({ data }: { data: any }) {
                 </a>
               </div>
 
-              {/* Row 3: Account Creation Footnote */}
               {createdDate && (
                 <div className="flex items-center gap-1.5 text-[11px] text-gray-500 leading-none pl-0.5">
                   <Calendar className="w-3 h-3 text-gray-500" />
@@ -234,48 +223,67 @@ export function DossierHero({ data }: { data: any }) {
             </div>
           </div>
 
-          {/* 2. Right: Official Badge Matrix with Vector Icons */}
+          {/* 2. Right: Official Badge Matrix with Official CS2 Premier and FACEIT Circular Badges */}
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
             
             {/* Premier Official CS2 Medal Badge */}
-            <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border ${premierTier.border} ${premierTier.bg} transition-all min-w-[155px]`}>
-              <div className="w-9 h-9 rounded-md bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0">
-                <img src={premierTier.badgePath} alt={premierTier.label} className="h-6 w-auto object-contain" />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">PREMIER</span>
-                  <span className={`text-[8px] px-1 py-0.2 rounded font-black uppercase ${premierTier.badge}`}>
-                    {premierTier.label}
-                  </span>
-                </div>
-                <div className={`text-base font-black ${premierTier.color} leading-snug tracking-tight`}>
-                  {premier?.rating ? premier.rating.toLocaleString() : "UNRANKED"}
-                </div>
-              </div>
-            </div>
-
-            {/* FACEIT Official Brand & Level Badge */}
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/25 bg-[#FF5500]/[0.03] min-w-[155px]">
-              {/* FACEIT Level Box */}
-              <div className={`w-9 h-9 rounded-md border flex flex-col items-center justify-center shrink-0 ${faceitStyle.bg} ${faceitStyle.border}`}>
-                <span className={`text-[7px] font-black leading-none ${faceitStyle.text}`}>LVL</span>
-                <span className={`text-sm font-black leading-none mt-0.5 ${faceitStyle.text}`}>
-                  {faceit?.skillLevel || "—"}
-                </span>
+            <div
+              className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all min-w-[170px]"
+              style={{
+                borderColor: `${premierTier.borderColor}40`,
+                backgroundColor: isPremierRanked ? `${premierTier.colorHex}0c` : "rgba(255, 255, 255, 0.02)",
+              }}
+            >
+              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+                <img
+                  src={premierTier.badgePath}
+                  alt={premierTier.label}
+                  className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+                />
               </div>
 
               <div>
                 <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
-                  <FaceitLogoIcon className="w-2.5 h-2.5" />
+                  <CS2PremierIcon className="w-3 h-3" color={premierTier.colorHex} />
+                  <span>PREMIER</span>
+                  {isPremierRanked && (
+                    <span
+                      className="text-[8px] px-1 py-0.5 rounded font-black uppercase"
+                      style={{ color: premierTier.colorHex, backgroundColor: `${premierTier.colorHex}20` }}
+                    >
+                      {premierTier.label}
+                    </span>
+                  )}
+                </div>
+                <div
+                  className="text-base font-black tracking-tight font-mono leading-tight mt-0.5"
+                  style={{ color: premierTier.colorHex }}
+                >
+                  {isPremierRanked ? premier.rating.toLocaleString() : "UNRANKED"}
+                </div>
+              </div>
+            </div>
+
+            {/* FACEIT Official Circular Badge & Rating */}
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/30 bg-[#FF5500]/[0.04] hover:bg-[#FF5500]/[0.08] transition-all min-w-[170px]">
+              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+                <img
+                  src={faceitBadge.badgePath}
+                  alt={`FACEIT Level ${faceitBadge.label}`}
+                  className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(255,85,0,0.3)]"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
+                  <FaceitLogoIcon className="w-3 h-3" />
                   <span>FACEIT PRO</span>
                 </div>
-                <div className="text-base font-black text-white leading-snug tracking-tight">
+                <div className="text-base font-black text-white tracking-tight font-mono leading-tight mt-0.5">
                   {faceit?.elo ? (
                     <>
                       {faceit.elo.toLocaleString()}{" "}
-                      <span className="text-[10px] font-semibold text-[#FF5500]">ELO</span>
+                      <span className="text-[10px] font-bold text-[#FF5500]">ELO</span>
                     </>
                   ) : (
                     <span className="text-xs text-gray-500 font-semibold">Unlinked</span>
@@ -285,12 +293,14 @@ export function DossierHero({ data }: { data: any }) {
             </div>
 
             {/* Valve VAC Security Shield Badge */}
-            <div className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[165px] ${
-              !isVacBanned
-                ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                : "border-rose-500/60 bg-rose-950/40 shadow-[0_0_15px_rgba(244,63,94,0.25)]"
-            }`}>
-              <div className="w-9 h-9 rounded-md bg-black/50 border border-white/[0.08] flex items-center justify-center shrink-0">
+            <div
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[170px] ${
+                !isVacBanned
+                  ? "border-emerald-500/30 bg-emerald-500/[0.03]"
+                  : "border-rose-500/60 bg-rose-950/40 shadow-[0_0_15px_rgba(244,63,94,0.25)]"
+              }`}
+            >
+              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
                 <ValveVacShieldIcon className="w-5 h-5" isClean={!isVacBanned} />
               </div>
 
@@ -298,13 +308,15 @@ export function DossierHero({ data }: { data: any }) {
                 <div className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">
                   VALVE VAC
                 </div>
-                <div className={`text-xs font-black uppercase tracking-wider leading-snug ${
-                  !isVacBanned ? "text-emerald-400" : "text-rose-400 font-bold"
-                }`}>
+                <div
+                  className={`text-xs font-black uppercase tracking-wider leading-tight mt-0.5 ${
+                    !isVacBanned ? "text-emerald-400" : "text-rose-400 font-bold"
+                  }`}
+                >
                   {!isVacBanned ? "CLEAN STANDING" : `${numVacBans} BANNED`}
                 </div>
                 {isVacBanned && daysSinceLastBan > 0 && (
-                  <div className="text-[8px] text-rose-400/80 font-mono">
+                  <div className="text-[8px] text-rose-400/80 font-mono mt-0.5">
                     {daysSinceLastBan}d ago
                   </div>
                 )}
@@ -320,7 +332,6 @@ export function DossierHero({ data }: { data: any }) {
       {showDrawer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
           <div className="relative w-full max-w-3xl bg-[#070c14] border border-cyan-500/30 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.8)] font-mono text-xs overflow-hidden">
-            {/* Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.08] bg-white/[0.02]">
               <div className="flex items-center gap-2 text-cyan-300 font-bold tracking-wider text-xs uppercase">
                 <Database className="w-4 h-4 text-cyan-400" />
@@ -345,7 +356,6 @@ export function DossierHero({ data }: { data: any }) {
               </div>
             </div>
 
-            {/* Modal Body */}
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="p-2.5 rounded bg-white/[0.02] border border-white/[0.06]">
@@ -377,7 +387,6 @@ export function DossierHero({ data }: { data: any }) {
                 </div>
               </div>
 
-              {/* Formats Table */}
               <div className="rounded border border-white/[0.08] bg-black/40 overflow-hidden">
                 <div className="divide-y divide-white/[0.04]">
                   {rows.map((row) => (
