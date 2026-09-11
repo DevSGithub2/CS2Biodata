@@ -119,14 +119,14 @@ export function DossierHero({ data }: { data: any }) {
   const steamIoUrl = steamId64 ? `https://steamid.io/lookup/${steamId64}` : "https://steamid.io";
 
   // Comprehensive VAC ban detection across API schema variations
-  const isVacBanned = Boolean(
-    bans?.vacBanned ||
-    bans?.VACBanned ||
-    (typeof bans?.numberOfVacBans === "number" && bans.numberOfVacBans > 0) ||
-    (typeof bans?.NumberOfVACBans === "number" && bans.NumberOfVACBans > 0)
-  );
+    // Comprehensive ban detection: VAC + Game Ban (Overwatch) + Community
+  const numVacBans = bans?.numberOfVacBans ?? bans?.NumberOfVACBans ?? 0;
+  const numGameBans = bans?.numberOfGameBans ?? bans?.NumberOfGameBans ?? 0;
+  const totalBans = numVacBans + numGameBans;
+  const isVacBanned = Boolean(bans?.vacBanned || bans?.VACBanned || numVacBans > 0);
+  const isGameBanned = numGameBans > 0;
+  const isBanned = isVacBanned || isGameBanned;
 
-  const numVacBans = bans?.numberOfVacBans ?? bans?.NumberOfVACBans ?? (isVacBanned ? 1 : 0);
   const daysSinceLastBan = bans?.daysSinceLastBan ?? bans?.DaysSinceLastBan ?? 0;
   const isCommunityBanned = Boolean(bans?.communityBanned || bans?.CommunityBanned);
   const economyBan = bans?.economyBan || bans?.EconomyBan || "none";
@@ -307,35 +307,41 @@ export function DossierHero({ data }: { data: any }) {
               </div>
             </div>
 
-            {/* 3. Valve VAC Security Shield Badge */}
+            {/* 3. Valve VAC / Security Status Badge */}
             <div
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[170px] transition-all ${
-                !isVacBanned
+                !isBanned
                   ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                  : "border-rose-500/70 bg-rose-950/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]"
+                  : "border-rose-500/80 bg-rose-950/60 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
               }`}
             >
               <div
                 className={`w-10 h-10 rounded-lg bg-black/60 border flex items-center justify-center shrink-0 p-1 ${
-                  !isVacBanned ? "border-white/[0.08]" : "border-rose-500/40"
+                  !isBanned ? "border-white/[0.08]" : "border-rose-500/50"
                 }`}
               >
-                <ValveVacShieldIcon className="w-5 h-5" isClean={!isVacBanned} />
+                <ValveVacShieldIcon className="w-5 h-5" isClean={!isBanned} />
               </div>
 
               <div>
-                <div className={`text-[9px] uppercase font-bold tracking-wider ${!isVacBanned ? "text-gray-400" : "text-rose-300/80"}`}>
-                  VALVE VAC
+                <div className={`text-[9px] uppercase font-bold tracking-wider ${!isBanned ? "text-gray-400" : "text-rose-300"}`}>
+                  VALVE SECURITY
                 </div>
                 <div
                   className={`text-xs font-black uppercase tracking-wider leading-tight mt-0.5 ${
-                    !isVacBanned ? "text-emerald-400" : "text-rose-400"
+                    !isBanned ? "text-emerald-400" : "text-rose-400"
                   }`}
                 >
-                  {!isVacBanned ? "CLEAN STANDING" : `${numVacBans > 1 ? `${numVacBans} VAC BANS` : "VAC BANNED"}`}
+                  {!isBanned
+                    ? "CLEAN STANDING"
+                    : isVacBanned && isGameBanned
+                    ? `${totalBans} BANS ON RECORD`
+                    : isGameBanned
+                    ? `${numGameBans} GAME BAN${numGameBans > 1 ? "S" : ""}`
+                    : `${numVacBans} VAC BAN${numVacBans > 1 ? "S" : ""}`}
                 </div>
-                {isVacBanned && (
-                  <div className="text-[8px] text-rose-300/90 font-mono mt-0.5">
+                {isBanned && (
+                  <div className="text-[8px] text-rose-400/90 font-mono mt-0.5">
                     {daysSinceLastBan > 0 ? `${daysSinceLastBan}d since ban` : "INFRACTION RECORDED"}
                   </div>
                 )}
