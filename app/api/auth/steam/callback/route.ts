@@ -1,29 +1,23 @@
-
-function getBaseUrl(req: NextRequest): string {
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-  const proto = req.headers.get("x-forwarded-proto") || "https";
-  if (host && !host.includes("localhost")) {
-    return `${proto}://${host}`;
-  }
-  return process.env.NEXT_PUBLIC_APP_URL || "https://www.cs2biotdata.me";
-}
-
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const claimedId = url.searchParams.get("openid.claimed_id");
 
+  const baseUrl = "https://www.cs2biotdata.me";
+
   if (!claimedId) {
-    return NextResponse.redirect(new URL("/?error=auth_failed", getBaseUrl(req)));
+    return NextResponse.redirect(new URL("/?error=auth_failed", baseUrl));
   }
 
   const steamIdMatches = claimedId.match(/\/id\/(\d+)/);
   const steamId = steamIdMatches ? steamIdMatches[1] : null;
 
   if (!steamId) {
-    return NextResponse.redirect(new URL("/?error=invalid_steam_id", getBaseUrl(req)));
+    return NextResponse.redirect(new URL("/?error=invalid_steam_id", baseUrl));
   }
 
   let personaName = "CS2 Operative";
@@ -73,15 +67,19 @@ export async function GET(req: NextRequest) {
     console.error("Failed to save user in MongoDB:", dbErr);
   }
 
-  const response = NextResponse.redirect(new URL(`/player/${steamId}`, getBaseUrl(req)));
+  const response = NextResponse.redirect(new URL(`/player/${steamId}`, baseUrl));
 
-  response.cookies.set("cs2_session_steamid", steamId, {
+  // Set shared cookie across both cs2biotdata.me and www.cs2biotdata.me
+  const cookieOpts = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: true,
+    sameSite: "lax" as const,
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-  });
+    maxAge: 60 * 60 * 24 * 30,
+  };
+
+  response.cookies.set("cs2_session_steamid", steamId, cookieOpts);
+  response.cookies.set("cs2_session_steamid", steamId, { ...cookieOpts, domain: ".cs2biotdata.me" });
 
   return response;
 }
