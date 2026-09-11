@@ -6,7 +6,7 @@ import { Trophy, Search, CheckCircle2 } from "lucide-react";
 import { TacticalLogo } from "@/components/ui/TacticalLogo";
 
 export function Navbar() {
-    const handleSignOut = async () => {
+      const handleSignOut = async () => {
     try {
       await fetch("/api/auth/signout", { method: "POST" });
     } catch (_) {}
