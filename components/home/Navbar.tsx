@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -7,6 +6,14 @@ import { Trophy, Search, CheckCircle2 } from "lucide-react";
 import { TacticalLogo } from "@/components/ui/TacticalLogo";
 
 export function Navbar() {
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } catch (_) {}
+    document.cookie = "token=; credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    window.location.href = "/";
+  };
+
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
@@ -77,7 +84,14 @@ export function Navbar() {
               <Trophy className="w-3.5 h-3.5 text-amber-400" />
               <span>Leaderboards</span>
             </Link>
-          </nav>
+            
+            <button
+              onClick={() => handleSignOut()}
+              className="px-3 py-1 text-xs font-semibold text-red-400 bg-red-950/40 border border-red-900/60 rounded hover:bg-red-900/50 hover:text-red-300 transition-colors"
+            >
+              Sign Out
+            </button>
+</nav>
         </div>
 
         {/* Action Controls */}
