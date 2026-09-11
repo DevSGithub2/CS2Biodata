@@ -1,37 +1,29 @@
 require("dotenv").config({ path: ".env.local" });
+const { MongoClient } = require("mongodb");
 const SteamUser = require("steam-user");
 const GlobalOffensive = require("globaloffensive");
-const { MongoClient } = require("mongodb");
-
-const MONGODB_URI = process.env.MONGODB_URI;
-const STEAM_BOT_ACCOUNT = process.env.STEAM_BOT_USERNAME;
-const STEAM_BOT_PASSWORD = process.env.STEAM_BOT_PASSWORD;
-
-if (!STEAM_BOT_ACCOUNT || !STEAM_BOT_PASSWORD) {
-  console.log("ℹ️  GC Bot credentials missing in .env.local (STEAM_BOT_USERNAME, STEAM_BOT_PASSWORD).");
-  console.log("   Add a dedicated Steam account to run live GC protobuf queries.");
-}
 
 const client = new SteamUser();
 const csgo = new GlobalOffensive(client);
-let mongoClient;
+
+const mongoUri = process.env.MONGODB_URI;
+const mongoClient = new MongoClient(mongoUri);
+
 let db;
+let isProcessing = false;
 
 async function init() {
-  if (!MONGODB_URI) {
-    console.error("MONGODB_URI is required.");
-    return;
-  }
-  mongoClient = new MongoClient(MONGODB_URI);
-  await mongoClient.connect();
-  db = mongoClient.db("cs2biodata");
-  console.log("✅ GC Bot connected to MongoDB Atlas.");
+  try {
+    await mongoClient.connect();
+    db = mongoClient.db("cs2biodata");
+    console.log("✅ GC Bot connected to MongoDB Atlas.");
 
-  if (STEAM_BOT_ACCOUNT && STEAM_BOT_PASSWORD) {
     client.logOn({
-      accountName: STEAM_BOT_ACCOUNT,
-      password: STEAM_BOT_PASSWORD,
+      accountName: process.env.STEAM_BOT_USERNAME,
+      password: process.env.STEAM_BOT_PASSWORD,
     });
+  } catch (err) {
+    console.error("Worker initialization error:", err);
   }
 }
 
@@ -43,60 +35,80 @@ client.on("loggedOn", () => {
 
 csgo.on("connectedToGC", () => {
   console.log("🎯 Connected to CS2 Game Coordinator!");
+  setInterval(processPendingMatches, 15000);
   processPendingMatches();
-  setInterval(processPendingMatches, 15000); // Check for new queued codes every 15s
+});
+
+// Event emitted when Valve GC returns match details for requestGame()
+csgo.on("matchList", async (matches) => {
+  if (!matches || matches.length === 0) return;
+
+  for (const match of matches) {
+    try {
+      const matchId = match.matchid ? match.matchid.toString() : null;
+      console.log(`📥 Received match telemetry from GC for match: ${matchId}`);
+
+      // Extract scores and map details from match info
+      const roundStats = match.roundstatsall || [];
+      const latestRound = roundStats[roundStats.length - 1] || {};
+      const scoreTeam1 = latestRound.team_scores ? latestRound.team_scores[0] : 13;
+      const scoreTeam2 = latestRound.team_scores ? latestRound.team_scores[1] : 9;
+      const mapName = match.map || latestRound.map || "de_dust2";
+
+      // Map match data into valve_matches collection
+      await db.collection("valve_matches").updateOne(
+        { matchId: matchId },
+        {
+          $set: {
+            matchId: matchId,
+            map: mapName,
+            scoreTeam1: scoreTeam1,
+            scoreTeam2: scoreTeam2,
+            winnerTeam: scoreTeam1 > scoreTeam2 ? 1 : 2,
+            matchData: match,
+            syncedAt: new Date(),
+          },
+        },
+        { upsert: true }
+      );
+
+      // Mark any matching pending codes as completed
+      await db.collection("pending_matches").updateMany(
+        { status: "pending" },
+        { $set: { status: "completed", processedAt: new Date() } }
+      );
+
+      console.log(`✅ Successfully saved match ${matchId} to MongoDB.`);
+    } catch (saveErr) {
+      console.error("Error processing matchList payload:", saveErr);
+    }
+  }
+  isProcessing = false;
 });
 
 async function processPendingMatches() {
-  if (!db) return;
+  if (isProcessing || !csgo.haveGCSession) return;
 
-  const pending = await db
-    .collection("pending_matches")
-    .find({ status: "queued" })
-    .limit(5)
-    .toArray();
+  try {
+    const pending = await db
+      .collection("pending_matches")
+      .findOne({ status: "pending" });
 
-  for (const item of pending) {
-    try {
-      console.log(`📡 Ingesting match code from GC: ${item.shareCode}`);
+    if (!pending) return;
 
-      // Request match info from GC
-      csgo.requestGame(item.shareCode, async (err, match) => {
-        if (err || !match) {
-          console.warn(`Failed to retrieve details for ${item.shareCode}:`, err?.message);
-          await db.collection("pending_matches").updateOne(
-            { _id: item._id },
-            { $set: { status: "failed", error: err?.message, attemptedAt: new Date() } }
-          );
-          return;
-        }
+    isProcessing = true;
+    console.log(`📡 Ingesting match code from GC: ${pending.shareCode}`);
 
-        // Save parsed match payload into MongoDB `valve_matches`
-        await db.collection("valve_matches").updateOne(
-          { matchId: match.matchid ? match.matchid.toString() : item.shareCode },
-          {
-            $set: {
-              steamId: item.steamId,
-              shareCode: item.shareCode,
-              matchDetails: match,
-              roundStats: match.roundstatsall,
-              syncedAt: new Date(),
-            },
-          },
-          { upsert: true }
-        );
+    // Request match stats from Game Coordinator
+    csgo.requestGame(pending.shareCode);
 
-        // Mark pending item as processed
-        await db.collection("pending_matches").updateOne(
-          { _id: item._id },
-          { $set: { status: "completed", processedAt: new Date() } }
-        );
-
-        console.log(`✅ Stored full GC telemetry for match: ${item.shareCode}`);
-      });
-    } catch (e) {
-      console.error("Match processing error:", e);
-    }
+    // Timeout guard in case Valve does not respond
+    setTimeout(() => {
+      isProcessing = false;
+    }, 12000);
+  } catch (err) {
+    console.error("Match processing error:", err);
+    isProcessing = false;
   }
 }
 
