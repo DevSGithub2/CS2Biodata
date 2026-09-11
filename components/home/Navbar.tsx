@@ -6,12 +6,19 @@ import { Trophy, Search, CheckCircle2 } from "lucide-react";
 import { TacticalLogo } from "@/components/ui/TacticalLogo";
 
 export function Navbar() {
-      const handleSignOut = async () => {
+        const handleSignOut = async () => {
     try {
-      await fetch("/api/auth/signout", { method: "POST" });
-    } catch (_) {}
+      const res = await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      await res.json().catch(() => ({}));
+    } catch (e) {
+      console.error("Signout request failed:", e);
+    }
     setUser(null);
-    window.location.href = "/";
+    window.location.replace("/?signed_out=" + Date.now());
   };
 
   const router = useRouter();
