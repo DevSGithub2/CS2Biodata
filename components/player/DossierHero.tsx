@@ -24,7 +24,7 @@ function CS2PremierIcon({ className = "w-4 h-4", color = "#ffdb38" }: { classNam
 }
 
 // Official FACEIT Chevron Logo (Vector)
-function FaceitLogoIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+function FaceitLogoIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="#FF5500" className={className}>
       <path d="M23.999 2.001c-.027-.378-.291-.7-.674-.823-.384-.123-.807-.024-1.091.254L.373 22.31c-.347.34-.407.876-.145 1.282.261.406.748.591 1.22.463L23.473 18.1c.334-.092.585-.357.653-.695.068-.337-.048-.686-.303-.912l-8.629-7.657L23.8 2.593c.139-.164.208-.378.199-.592z" />
@@ -35,7 +35,7 @@ function FaceitLogoIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
 // Official Valve VAC Tactical Security Shield Logo (Vector)
 function ValveVacShieldIcon({ className = "w-5 h-5", isClean = true }: { className?: string; isClean?: boolean }) {
   const strokeColor = isClean ? "#10B981" : "#F43F5E";
-  const fillColor = isClean ? "rgba(16, 185, 129, 0.15)" : "rgba(244, 63, 94, 0.15)";
+  const fillColor = isClean ? "rgba(16, 185, 129, 0.15)" : "rgba(244, 63, 94, 0.2)";
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
       <path
@@ -86,7 +86,7 @@ export function DossierHero({ data }: { data: any }) {
     ? new Date(steam.timeCreated * 1000).toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : null;
 
-  // BigInt Computations for Steam formats
+  // SteamID Calculations
   let steamID = "N/A";
   let steamID3 = "N/A";
   let steamID3NoBrackets = "N/A";
@@ -104,9 +104,7 @@ export function DossierHero({ data }: { data: any }) {
         steamID3NoBrackets = `U:1:${idNum}`;
       }
     }
-  } catch {
-    // fallback
-  }
+  } catch {}
 
   const rawProfileUrl = steam?.profileUrl || (steamId64 ? `https://steamcommunity.com/profiles/${steamId64}/` : "");
   let customURL = "";
@@ -120,11 +118,18 @@ export function DossierHero({ data }: { data: any }) {
   const fullUrlWithCustom = customURL ? `https://steamcommunity.com/id/${customURL}` : "None Configured";
   const steamIoUrl = steamId64 ? `https://steamid.io/lookup/${steamId64}` : "https://steamid.io";
 
-  const isVacBanned = Boolean(bans?.vacBanned || bans?.numberOfVacBans > 0);
-  const numVacBans = bans?.numberOfVacBans ?? 0;
-  const daysSinceLastBan = bans?.daysSinceLastBan ?? 0;
-  const isCommunityBanned = Boolean(bans?.communityBanned);
-  const economyBan = bans?.economyBan || "none";
+  // Comprehensive VAC ban detection across API schema variations
+  const isVacBanned = Boolean(
+    bans?.vacBanned ||
+    bans?.VACBanned ||
+    (typeof bans?.numberOfVacBans === "number" && bans.numberOfVacBans > 0) ||
+    (typeof bans?.NumberOfVACBans === "number" && bans.NumberOfVACBans > 0)
+  );
+
+  const numVacBans = bans?.numberOfVacBans ?? bans?.NumberOfVACBans ?? (isVacBanned ? 1 : 0);
+  const daysSinceLastBan = bans?.daysSinceLastBan ?? bans?.DaysSinceLastBan ?? 0;
+  const isCommunityBanned = Boolean(bans?.communityBanned || bans?.CommunityBanned);
+  const economyBan = bans?.economyBan || bans?.EconomyBan || "none";
   const isPublic = steam?.isPublic ?? true;
 
   const rows = [
@@ -145,16 +150,20 @@ export function DossierHero({ data }: { data: any }) {
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  // Resolve Official Premier Tier & Faceit Badge
+  // Premier State
   const isPremierRanked = typeof premier?.rating === "number" && premier.rating > 0;
   const premierTier = getPremierTier(premier?.rating);
-  const faceitLevelOrElo = faceit?.skillLevel || faceit?.elo || 8;
-  const faceitBadge = getOfficialFaceitBadge(faceitLevelOrElo);
+
+  // FACEIT State Check: verify if player actually exists on FACEIT
+  const hasFaceit = Boolean(
+    faceit &&
+    (faceit.skillLevel || faceit.elo || faceit.nickname || faceit.player_id || faceit.id)
+  );
+  const faceitBadge = hasFaceit ? getOfficialFaceitBadge(faceit?.skillLevel || faceit?.elo || 1) : null;
 
   return (
     <>
       <div className="relative rounded-lg bg-[#070b12]/95 border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md p-5 sm:p-6 font-mono">
-        {/* Subtle Corner Brackets */}
         <span className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-cyan-400/40 rounded-tl" />
         <span className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-cyan-400/40 rounded-tr" />
         <span className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-cyan-400/40 rounded-bl" />
@@ -162,7 +171,7 @@ export function DossierHero({ data }: { data: any }) {
 
         <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
           
-          {/* 1. Left: Avatar + Unified Action Layout */}
+          {/* Left: Avatar + Unified Action Layout */}
           <div className="flex items-center gap-4 text-left w-full lg:w-auto">
             <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-lg border border-white/[0.14] overflow-hidden bg-black/50 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.5)] ring-1 ring-cyan-500/10">
               {avatar ? (
@@ -172,7 +181,6 @@ export function DossierHero({ data }: { data: any }) {
               )}
             </div>
 
-            {/* Name + Side-by-Side Action Strip + Date */}
             <div className="flex flex-col justify-center gap-2 min-w-0">
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-[260px] leading-none">
@@ -193,7 +201,6 @@ export function DossierHero({ data }: { data: any }) {
                 )}
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDrawer(true)}
@@ -223,10 +230,10 @@ export function DossierHero({ data }: { data: any }) {
             </div>
           </div>
 
-          {/* 2. Right: Official Badge Matrix with Official CS2 Premier and FACEIT Circular Badges */}
+          {/* Right: Badge Matrix */}
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
             
-            {/* Premier Official CS2 Medal Badge */}
+            {/* 1. CS2 Premier Medal */}
             <div
               className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all min-w-[170px]"
               style={{
@@ -264,14 +271,20 @@ export function DossierHero({ data }: { data: any }) {
               </div>
             </div>
 
-            {/* FACEIT Official Circular Badge & Rating */}
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/30 bg-[#FF5500]/[0.04] hover:bg-[#FF5500]/[0.08] transition-all min-w-[170px]">
+            {/* 2. FACEIT Official Badge */}
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/30 bg-[#FF5500]/[0.04] transition-all min-w-[170px]">
               <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
-                <img
-                  src={faceitBadge.badgePath}
-                  alt={`FACEIT Level ${faceitBadge.label}`}
-                  className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(255,85,0,0.3)]"
-                />
+                {hasFaceit && faceitBadge ? (
+                  <img
+                    src={faceitBadge.badgePath}
+                    alt={`FACEIT Level ${faceitBadge.label}`}
+                    className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(255,85,0,0.3)]"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center rounded bg-[#FF5500]/10 border border-[#FF5500]/20">
+                    <FaceitLogoIcon className="w-6 h-6" />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -280,44 +293,50 @@ export function DossierHero({ data }: { data: any }) {
                   <span>FACEIT PRO</span>
                 </div>
                 <div className="text-base font-black text-white tracking-tight font-mono leading-tight mt-0.5">
-                  {faceit?.elo ? (
+                  {hasFaceit && faceit?.elo ? (
                     <>
                       {faceit.elo.toLocaleString()}{" "}
                       <span className="text-[10px] font-bold text-[#FF5500]">ELO</span>
                     </>
+                  ) : hasFaceit && faceit?.skillLevel ? (
+                    <span className="text-xs text-orange-300 font-bold">Level {faceit.skillLevel}</span>
                   ) : (
-                    <span className="text-xs text-gray-500 font-semibold">Unlinked</span>
+                    <span className="text-[11px] text-gray-400 font-semibold tracking-wide">ID NOT FOUND</span>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Valve VAC Security Shield Badge */}
+            {/* 3. Valve VAC Security Shield Badge */}
             <div
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[170px] ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[170px] transition-all ${
                 !isVacBanned
                   ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                  : "border-rose-500/60 bg-rose-950/40 shadow-[0_0_15px_rgba(244,63,94,0.25)]"
+                  : "border-rose-500/70 bg-rose-950/50 shadow-[0_0_20px_rgba(244,63,94,0.35)]"
               }`}
             >
-              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+              <div
+                className={`w-10 h-10 rounded-lg bg-black/60 border flex items-center justify-center shrink-0 p-1 ${
+                  !isVacBanned ? "border-white/[0.08]" : "border-rose-500/40"
+                }`}
+              >
                 <ValveVacShieldIcon className="w-5 h-5" isClean={!isVacBanned} />
               </div>
 
               <div>
-                <div className="text-[9px] uppercase font-bold text-gray-400 tracking-wider">
+                <div className={`text-[9px] uppercase font-bold tracking-wider ${!isVacBanned ? "text-gray-400" : "text-rose-300/80"}`}>
                   VALVE VAC
                 </div>
                 <div
                   className={`text-xs font-black uppercase tracking-wider leading-tight mt-0.5 ${
-                    !isVacBanned ? "text-emerald-400" : "text-rose-400 font-bold"
+                    !isVacBanned ? "text-emerald-400" : "text-rose-400"
                   }`}
                 >
-                  {!isVacBanned ? "CLEAN STANDING" : `${numVacBans} BANNED`}
+                  {!isVacBanned ? "CLEAN STANDING" : `${numVacBans > 1 ? `${numVacBans} VAC BANS` : "VAC BANNED"}`}
                 </div>
-                {isVacBanned && daysSinceLastBan > 0 && (
-                  <div className="text-[8px] text-rose-400/80 font-mono mt-0.5">
-                    {daysSinceLastBan}d ago
+                {isVacBanned && (
+                  <div className="text-[8px] text-rose-300/90 font-mono mt-0.5">
+                    {daysSinceLastBan > 0 ? `${daysSinceLastBan}d since ban` : "INFRACTION RECORDED"}
                   </div>
                 )}
               </div>
@@ -358,14 +377,14 @@ export function DossierHero({ data }: { data: any }) {
 
             <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className="p-2.5 rounded bg-white/[0.02] border border-white/[0.06]">
+                <div className={`p-2.5 rounded border ${isVacBanned ? "bg-rose-950/30 border-rose-500/40" : "bg-white/[0.02] border-white/[0.06]"}`}>
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">VAC Ban</div>
                   <div className={`text-xs font-bold mt-0.5 ${isVacBanned ? "text-rose-400" : "text-emerald-400"}`}>
-                    {isVacBanned ? `${numVacBans} Bans` : "Clean"}
+                    {isVacBanned ? `${numVacBans} Ban(s)` : "Clean"}
                   </div>
                 </div>
 
-                <div className="p-2.5 rounded bg-white/[0.02] border border-white/[0.06]">
+                <div className={`p-2.5 rounded border ${isCommunityBanned ? "bg-rose-950/30 border-rose-500/40" : "bg-white/[0.02] border-white/[0.06]"}`}>
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">Community</div>
                   <div className={`text-xs font-bold mt-0.5 ${isCommunityBanned ? "text-rose-400" : "text-emerald-400"}`}>
                     {isCommunityBanned ? "Restricted" : "Clean"}
