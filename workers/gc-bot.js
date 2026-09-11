@@ -61,7 +61,7 @@ async function processPendingMatches() {
       console.log(`📡 Ingesting match code from GC: ${item.shareCode}`);
 
       // Request match info from GC
-      csgo.requestMatchDetails(item.shareCode, async (err, match) => {
+      csgo.requestGame(item.shareCode, async (err, match) => {
         if (err || !match) {
           console.warn(`Failed to retrieve details for ${item.shareCode}:`, err?.message);
           await db.collection("pending_matches").updateOne(
