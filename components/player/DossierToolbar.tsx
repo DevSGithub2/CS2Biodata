@@ -19,7 +19,7 @@ export function DossierToolbar({ data, onSyncComplete }: DossierToolbarProps) {
 
   const handleSync = async () => {
     try {
-      setIsSyncing(true);
+      setSyncing(true);
       await fetch("/api/valve/crawl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -29,7 +29,7 @@ export function DossierToolbar({ data, onSyncComplete }: DossierToolbarProps) {
     } catch (e) {
       console.error("Manual sync failed:", e);
     } finally {
-      setIsSyncing(false);
+      setSyncing(false);
     }
   };
 
