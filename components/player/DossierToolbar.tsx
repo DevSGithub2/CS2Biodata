@@ -18,28 +18,18 @@ export function DossierToolbar({ data, onSyncComplete }: DossierToolbarProps) {
   const steamId64 = steam?.steamId64 || data?.steamId64 || "";
 
   const handleSync = async () => {
-    if (syncing || !steamId64) return;
-    setSyncing(true);
-    setStatusMsg(null);
-
     try {
-      const res = await fetch(`/api/gc-sync`, {
+      setIsSyncing(true);
+      await fetch("/api/valve/crawl", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ steamId64 }),
+        body: JSON.stringify({ steamId: data?.steamId64 || data?.player?.steamId }),
       });
-
-      if (!res.ok) {
-        await fetch(`/api/player/audit?query=${steamId64}&force=true`);
-      }
-
-      setStatusMsg("SYNCHRONIZED");
-      if (onSyncComplete) onSyncComplete();
-    } catch {
-      setStatusMsg("QUEUED");
+      window.location.reload();
+    } catch (e) {
+      console.error("Manual sync failed:", e);
     } finally {
-      setSyncing(false);
-      setTimeout(() => setStatusMsg(null), 3500);
+      setIsSyncing(false);
     }
   };
 

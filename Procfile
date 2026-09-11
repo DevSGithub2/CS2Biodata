@@ -1,2 +1,2 @@
-web: npm run start
-worker: node workers/gc-worker.js
+web: npm run start -- -p $PORT
+worker: node workers/gc-bot.js

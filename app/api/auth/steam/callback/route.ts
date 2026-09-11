@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
-import { User } from "@/lib/models/user";
-import { ValveToken } from "@/lib/models/valve";
-import { syncValveMatches } from "@/lib/services/valve-sync";
+import clientPromise from "@/lib/mongodb";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -12,7 +9,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/?error=auth_failed", req.url));
   }
 
-  // Steam claimed_id format: https://steamcommunity.com/openid/id/76561198xxxxxxxx
   const steamIdMatches = claimedId.match(/\/id\/(\d+)/);
   const steamId = steamIdMatches ? steamIdMatches[1] : null;
 
@@ -20,9 +16,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/?error=invalid_steam_id", req.url));
   }
 
-  await dbConnect();
-
-  // Fetch Steam Profile Info via Steam API
   let personaName = "CS2 Operative";
   let avatar = "";
   let profileUrl = `https://steamcommunity.com/profiles/${steamId}`;
@@ -45,32 +38,31 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Upsert user into database
-  await User.findOneAndUpdate(
-    { steamId },
-    {
-      personaName,
-      avatar,
-      profileUrl,
-      lastLogin: new Date(),
-    },
-    { upsert: true, new: true }
-  );
-
-  // Check if user had a pending Game Auth Code in cookies before signing in
-  const pendingAuth = req.cookies.get("pending_game_auth")?.value;
-  const pendingShare = req.cookies.get("pending_share_code")?.value || "";
-
-  if (pendingAuth) {
-    try {
-      await syncValveMatches(steamId, pendingAuth, pendingShare);
-      await User.findOneAndUpdate({ steamId }, { hasAuthCode: true });
-    } catch (err) {
-      console.error("Auto-sync pending code failed:", err);
-    }
+  // Save/Upsert directly to MongoDB Atlas
+  try {
+    const client = await clientPromise;
+    const db = client.db("cs2biodata");
+    await db.collection("users").updateOne(
+      { steamId },
+      {
+        $set: {
+          steamId,
+          personaName,
+          avatar,
+          profileUrl,
+          lastLogin: new Date(),
+        },
+        $setOnInsert: {
+          createdAt: new Date(),
+          hasAuthCode: false,
+        }
+      },
+      { upsert: true }
+    );
+  } catch (dbErr) {
+    console.error("Failed to save user in MongoDB:", dbErr);
   }
 
-  // Set session cookie and redirect directly to their player stat page
   const response = NextResponse.redirect(new URL(`/player/${steamId}`, req.url));
 
   response.cookies.set("cs2_session_steamid", steamId, {
@@ -80,10 +72,6 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: 60 * 60 * 24 * 30, // 30 days
   });
-
-  // Clear pending token cookies
-  response.cookies.delete("pending_game_auth");
-  response.cookies.delete("pending_share_code");
 
   return response;
 }

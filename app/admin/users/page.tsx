@@ -1,36 +1,40 @@
 import React from "react";
-import dbConnect from "@/lib/db";
-import { User } from "@/lib/models/user";
-import { Users, Shield, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import clientPromise from "@/lib/mongodb";
+import { Users, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
 
-export const revalidate = 0; // Fresh load on every request
+export const revalidate = 0;
 
 export default async function AdminUsersPage() {
-  await dbConnect();
-  const users = await User.find({}).sort({ lastLogin: -1 }).lean();
+  let users: any[] = [];
+  try {
+    const client = await clientPromise;
+    const db = client.db("cs2biodata");
+    users = await db.collection("users").find({}).sort({ lastLogin: -1 }).toArray();
+  } catch (e) {
+    console.error("Failed to load users for admin:", e);
+  }
 
   return (
-    <div className="min-h-screen bg-[#0d0e12] p-8 text-white">
+    <div className="min-h-screen bg-[#04070a] p-8 text-white font-mono">
       <div className="mx-auto max-w-5xl space-y-6">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-5">
+        <div className="flex items-center justify-between border-b border-cyan-900/40 pb-5">
           <div className="flex items-center gap-3">
-            <Users className="h-6 w-6 text-sky-400" />
+            <Users className="h-6 w-6 text-cyan-400" />
             <div>
-              <h1 className="text-xl font-black uppercase tracking-wider">CS2 Biodata Admin</h1>
-              <p className="text-xs text-zinc-400">Authenticated Players & Token Overview</p>
+              <h1 className="text-xl font-black uppercase tracking-wider text-cyan-300">
+                CS2 Biodata Admin
+              </h1>
+              <p className="text-xs text-gray-400">Authenticated Players & Token Database</p>
             </div>
           </div>
-          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-mono font-bold text-zinc-300">
+          <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/30 px-3 py-1.5 text-xs font-bold text-cyan-300">
             Total Users: {users.length}
           </div>
         </div>
 
-        {/* User Table */}
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#12141a]">
+        <div className="overflow-hidden rounded-xl border border-cyan-900/40 bg-[#080d14]">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-white/10 bg-white/5 font-bold uppercase tracking-wider text-zinc-400">
+            <thead className="border-b border-cyan-900/40 bg-cyan-950/20 font-bold uppercase tracking-wider text-gray-400">
               <tr>
                 <th className="p-4">Player</th>
                 <th className="p-4">SteamID64</th>
@@ -39,14 +43,20 @@ export default async function AdminUsersPage() {
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 font-medium text-zinc-300">
+            <tbody className="divide-y divide-white/5 font-medium text-gray-300">
               {users.map((u: any) => (
                 <tr key={u.steamId} className="hover:bg-white/[0.02] transition">
                   <td className="p-4 flex items-center gap-3">
                     {u.avatar ? (
-                      <img src={u.avatar} alt="" className="h-8 w-8 rounded-full border border-white/10" />
+                      <img
+                        src={u.avatar}
+                        alt=""
+                        className="h-8 w-8 rounded-full border border-cyan-500/40"
+                      />
                     ) : (
-                      <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center">?</div>
+                      <div className="h-8 w-8 rounded-full bg-cyan-950 flex items-center justify-center">
+                        ?
+                      </div>
                     )}
                     <div>
                       <div className="font-bold text-white">{u.personaName}</div>
@@ -54,13 +64,13 @@ export default async function AdminUsersPage() {
                         href={u.profileUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[10px] text-zinc-500 hover:text-sky-400"
+                        className="text-[10px] text-gray-500 hover:text-cyan-400"
                       >
                         Steam Profile ↗
                       </a>
                     </div>
                   </td>
-                  <td className="p-4 font-mono text-zinc-400">{u.steamId}</td>
+                  <td className="p-4 font-mono text-cyan-400">{u.steamId}</td>
                   <td className="p-4">
                     {u.hasAuthCode ? (
                       <span className="inline-flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-0.5 text-[11px] font-bold text-emerald-400">
@@ -72,23 +82,29 @@ export default async function AdminUsersPage() {
                       </span>
                     )}
                   </td>
-                  <td className="p-4 text-zinc-400">
-                    {new Date(u.lastLogin).toLocaleString()}
+                  <td className="p-4 text-gray-400">
+                    {u.lastLogin ? new Date(u.lastLogin).toLocaleString() : "Never"}
                   </td>
                   <td className="p-4 text-right">
                     <a
                       href={`/player/${u.steamId}`}
-                      className="inline-flex items-center gap-1 rounded border border-white/10 px-2.5 py-1 text-[11px] font-bold text-sky-400 hover:bg-sky-500/10"
+                      className="inline-flex items-center gap-1 rounded border border-cyan-500/30 px-2.5 py-1 text-[11px] font-bold text-cyan-400 hover:bg-cyan-500/10"
                     >
                       View Stats <ExternalLink className="h-3 w-3" />
                     </a>
                   </td>
                 </tr>
               ))}
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-gray-500">
+                    No authenticated users registered yet.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/db";
-import { User } from "@/lib/models/user";
+import clientPromise from "@/lib/mongodb";
 
 export async function GET(req: NextRequest) {
   const steamId = req.cookies.get("cs2_session_steamid")?.value;
@@ -9,32 +8,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ authenticated: false });
   }
 
-  await dbConnect();
-  const user = await User.findOne({ steamId }).lean();
+  try {
+    const client = await clientPromise;
+    const db = client.db("cs2biodata");
+    const user = await db.collection("users").findOne({ steamId });
 
-  return NextResponse.json({
-    authenticated: true,
-    user: user || { steamId },
-  });
-}
-
-// Stash pending auth codes if user is not logged in yet
-export async function POST(req: NextRequest) {
-  const { authCode, shareCode } = await req.json();
-
-  const res = NextResponse.json({ success: true });
-  if (authCode) {
-    res.cookies.set("pending_game_auth", authCode.trim(), {
-      path: "/",
-      maxAge: 600, // 10 minutes
+    return NextResponse.json({
+      authenticated: true,
+      user: user || { steamId, personaName: "Player" },
+    });
+  } catch (err) {
+    return NextResponse.json({
+      authenticated: true,
+      user: { steamId, personaName: "Player" },
     });
   }
-  if (shareCode) {
-    res.cookies.set("pending_share_code", shareCode.trim(), {
-      path: "/",
-      maxAge: 600,
-    });
-  }
-
-  return res;
 }

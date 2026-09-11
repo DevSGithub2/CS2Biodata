@@ -1,15 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Trophy, Search } from "lucide-react";
+import { Trophy, Search, CheckCircle2 } from "lucide-react";
 import { TacticalLogo } from "@/components/ui/TacticalLogo";
 
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,13 +95,36 @@ export function Navbar() {
             </div>
           </form>
 
-          {/* Steam Sign In Link */}
-          <a
-            href="/api/auth/steam/login"
-            className="flex items-center gap-2 rounded-lg bg-[#1a243d] border border-sky-500/30 px-3.5 py-1.5 text-xs font-bold text-sky-400 hover:bg-sky-500/20 hover:border-sky-400 transition cursor-pointer"
-          >
-            <span className="tracking-widest">SIGN IN</span>
-          </a>
+          {/* Dynamic Steam Sign In / User Profile */}
+          {user ? (
+            <Link
+              href={`/player/${user.steamId}`}
+              className="flex items-center gap-2.5 rounded-lg border border-cyan-500/30 bg-[#080d14] px-3 py-1.5 transition hover:border-cyan-400 hover:bg-cyan-950/30"
+            >
+              {user.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.personaName}
+                  className="h-6 w-6 rounded-full border border-cyan-500/50 object-cover"
+                />
+              ) : (
+                <div className="h-6 w-6 rounded-full bg-cyan-900/50 text-[10px] flex items-center justify-center font-bold">
+                  {user.personaName?.charAt(0) || "U"}
+                </div>
+              )}
+              <span className="text-xs font-bold text-white max-w-[100px] truncate">
+                {user.personaName}
+              </span>
+              <CheckCircle2 className="h-3.5 w-3.5 text-cyan-400" />
+            </Link>
+          ) : (
+            <a
+              href="/api/auth/steam/login"
+              className="flex items-center gap-2 rounded-lg bg-[#1a243d] border border-sky-500/30 px-3.5 py-1.5 text-xs font-bold text-sky-400 hover:bg-sky-500/20 hover:border-sky-400 transition cursor-pointer"
+            >
+              <span className="tracking-widest">SIGN IN</span>
+            </a>
+          )}
         </div>
       </div>
     </header>

@@ -12,29 +12,40 @@ export function FaceitTab({ data }: FaceitTabProps) {
   const [faceitData, setFaceitData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+    const targetSteamId = data?.steamId64 || data?.player?.steamId || data?.steam?.steamid;
+
   useEffect(() => {
     async function loadData() {
+      if (!targetSteamId) {
+        setLoading(false);
+        return;
+      }
       try {
-        const res = await fetch("/api/faceit?steamId=76561198877011661");
+        setLoading(true);
+        const res = await fetch(`/api/faceit?steamId=${targetSteamId}`);
         const json = await res.json();
         if (json && !json.error) {
           setFaceitData(json);
+        } else {
+          setFaceitData(null);
         }
       } catch (err) {
         console.error("Failed to load FACEIT data", err);
+        setFaceitData(null);
       } finally {
         setLoading(false);
       }
     }
     loadData();
-  }, []);
+  }, [targetSteamId]);
 
-  const elo = faceitData?.elo ?? 1535;
-  const skillLevel = faceitData?.skillLevel ?? 8;
-  const region = faceitData?.region ?? "SEA";
-  const lifetime = faceitData?.lifetime || {};
-  const nickname = faceitData?.nickname ?? "DevS";
-  const avatar = faceitData?.avatar ?? "https://distribution.faceit-cdn.net/images/ab32cd0d-abf9-4b76-a1f9-bd5ca5171a4e.jpg";
+  const activeFaceit = faceitData || data?.faceit;
+  const elo = activeFaceit?.elo ?? activeFaceit?.faceit_elo ?? null;
+  const skillLevel = activeFaceit?.skillLevel ?? activeFaceit?.skill_level ?? 1;
+  const region = activeFaceit?.region ?? "--";
+  const lifetime = activeFaceit?.lifetime || {};
+  const nickname = activeFaceit?.nickname ?? data?.steam?.personaname ?? "CS2 Operative";
+  const avatar = activeFaceit?.avatar || data?.steam?.avatarfull || "";
   const matches = faceitData?.matches || [];
   const faceitProfileUrl = `https://www.faceit.com/en/players/${nickname}`;
 
