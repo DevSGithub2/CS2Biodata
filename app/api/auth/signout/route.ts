@@ -1,48 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const cookieStore = await cookies();
-  
-  // 1. Delete all cookies received on this request
-  for (const c of cookieStore.getAll()) {
-    cookieStore.delete(c.name);
-  }
-  cookieStore.delete("cs2_session_steamid");
-  cookieStore.delete("steam_session");
+  // Always redirect to www canonical domain with cache buster
+  const redirectUrl = new URL("https://www.cs2biotdata.me/");
+  redirectUrl.searchParams.set("signed_out", Date.now().toString());
 
-  // 2. Redirect to canonical host
-  const host = req.headers.get("host") || "";
-  const baseUrl = host.includes("localhost") ? "http://localhost:3000" : "https://www.cs2biotdata.me";
-  const target = new URL("/", baseUrl);
-  target.searchParams.set("logout", Date.now().toString());
+  const response = NextResponse.redirect(redirectUrl, 302);
 
-  const response = NextResponse.redirect(target, { status: 302 });
+  const cookieNames = [
+    "cs2_session_steamid",
+    "steam_session",
+    "better-auth.session_token",
+    "session",
+    "token"
+  ];
 
-  // 3. Clear every hostname permutation
-  const targets = ["cs2_session_steamid", "steam_session", "token", "credentials", "session"];
-  const domains = [undefined, ".cs2biotdata.me", "cs2biotdata.me", "www.cs2biotdata.me"];
+  // Specific host targets where the cookie was observed in DevTools
+  const domains = [
+    "www.cs2biotdata.me",
+    ".cs2biotdata.me",
+    "cs2biotdata.me",
+    undefined
+  ];
 
-  for (const name of targets) {
-    for (const d of domains) {
+  for (const name of cookieNames) {
+    for (const domain of domains) {
       response.cookies.set(name, "", {
         path: "/",
-        domain: d,
+        domain: domain,
         expires: new Date(0),
         maxAge: 0,
         httpOnly: true,
-        secure: !host.includes("localhost"),
+        secure: true,
         sameSite: "lax",
       });
       response.cookies.set(name, "", {
         path: "/",
-        domain: d,
+        domain: domain,
         expires: new Date(0),
         maxAge: 0,
         httpOnly: false,
-        secure: !host.includes("localhost"),
+        secure: true,
         sameSite: "lax",
       });
     }

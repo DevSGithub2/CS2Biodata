@@ -7,17 +7,15 @@ export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const claimedId = url.searchParams.get("openid.claimed_id");
 
-  const baseUrl = "https://www.cs2biotdata.me";
-
   if (!claimedId) {
-    return NextResponse.redirect(new URL("/?error=auth_failed", baseUrl));
+    return NextResponse.redirect("https://www.cs2biotdata.me/?error=auth_failed");
   }
 
   const steamIdMatches = claimedId.match(/\/id\/(\d+)/);
   const steamId = steamIdMatches ? steamIdMatches[1] : null;
 
   if (!steamId) {
-    return NextResponse.redirect(new URL("/?error=invalid_steam_id", baseUrl));
+    return NextResponse.redirect("https://www.cs2biotdata.me/?error=invalid_steam_id");
   }
 
   let personaName = "CS2 Operative";
@@ -42,7 +40,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Save/Upsert directly to MongoDB Atlas
   try {
     const client = await clientPromise;
     const db = client.db("cs2biodata");
@@ -67,19 +64,17 @@ export async function GET(req: NextRequest) {
     console.error("Failed to save user in MongoDB:", dbErr);
   }
 
-  const response = NextResponse.redirect(new URL(`/player/${steamId}`, baseUrl));
+  const response = NextResponse.redirect(new URL(`/player/${steamId}`, "https://www.cs2biotdata.me"));
 
-  // Set shared cookie across both cs2biotdata.me and www.cs2biotdata.me
-  const cookieOpts = {
+  // Set with explicit leading dot wildcard domain for cross-subdomain compatibility
+  response.cookies.set("cs2_session_steamid", steamId, {
+    domain: ".cs2biotdata.me",
+    path: "/",
     httpOnly: true,
     secure: true,
-    sameSite: "lax" as const,
-    path: "/",
+    sameSite: "lax",
     maxAge: 60 * 60 * 24 * 30,
-  };
-
-  response.cookies.set("cs2_session_steamid", steamId, cookieOpts);
-  response.cookies.set("cs2_session_steamid", steamId, { ...cookieOpts, domain: ".cs2biotdata.me" });
+  });
 
   return response;
 }
