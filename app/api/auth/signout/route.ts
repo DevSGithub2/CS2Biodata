@@ -1,32 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  // Always redirect to www canonical domain with cache buster
-  const redirectUrl = new URL("https://www.cs2biotdata.me/");
-  redirectUrl.searchParams.set("signed_out", Date.now().toString());
+async function executeSignOut(req: NextRequest) {
+  const cookieStore = await cookies();
+  
+  // Wipe all cookies present on request
+  for (const c of cookieStore.getAll()) {
+    cookieStore.delete(c.name);
+  }
 
-  const response = NextResponse.redirect(redirectUrl, 302);
+  // Determine current host so redirect lands on whatever domain the user is currently on
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "www.cs2biotdata.me";
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  const targetUrl = new URL("/", `${proto}://${host}`);
+  targetUrl.searchParams.set("signed_out", Date.now().toString());
+
+  const response = NextResponse.redirect(targetUrl, 303);
 
   const cookieNames = [
     "cs2_session_steamid",
     "steam_session",
     "better-auth.session_token",
     "session",
-    "token"
+    "token",
+    "credentials"
   ];
 
-  // Specific host targets where the cookie was observed in DevTools
-  const domains = [
+  // Expire cookies for all host and subdomain combinations
+  const targetDomains = [
+    undefined,
     "www.cs2biotdata.me",
-    ".cs2biotdata.me",
+    ".www.cs2biotdata.me",
     "cs2biotdata.me",
-    undefined
+    ".cs2biotdata.me"
   ];
 
   for (const name of cookieNames) {
-    for (const domain of domains) {
+    for (const domain of targetDomains) {
       response.cookies.set(name, "", {
         path: "/",
         domain: domain,
@@ -49,9 +61,15 @@ export async function GET(req: NextRequest) {
   }
 
   response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  response.headers.set("Pragma", "no-cache");
+
   return response;
 }
 
+export async function GET(req: NextRequest) {
+  return executeSignOut(req);
+}
+
 export async function POST(req: NextRequest) {
-  return GET(req);
+  return executeSignOut(req);
 }
