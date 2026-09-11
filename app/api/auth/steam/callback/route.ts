@@ -1,3 +1,13 @@
+
+function getBaseUrl(req: NextRequest): string {
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const proto = req.headers.get("x-forwarded-proto") || "https";
+  if (host && !host.includes("localhost")) {
+    return `${proto}://${host}`;
+  }
+  return process.env.NEXT_PUBLIC_APP_URL || "https://www.cs2biotdata.me";
+}
+
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
@@ -6,14 +16,14 @@ export async function GET(req: NextRequest) {
   const claimedId = url.searchParams.get("openid.claimed_id");
 
   if (!claimedId) {
-    return NextResponse.redirect(new URL("/?error=auth_failed", req.url));
+    return NextResponse.redirect(new URL("/?error=auth_failed", getBaseUrl(req)));
   }
 
   const steamIdMatches = claimedId.match(/\/id\/(\d+)/);
   const steamId = steamIdMatches ? steamIdMatches[1] : null;
 
   if (!steamId) {
-    return NextResponse.redirect(new URL("/?error=invalid_steam_id", req.url));
+    return NextResponse.redirect(new URL("/?error=invalid_steam_id", getBaseUrl(req)));
   }
 
   let personaName = "CS2 Operative";
@@ -63,7 +73,7 @@ export async function GET(req: NextRequest) {
     console.error("Failed to save user in MongoDB:", dbErr);
   }
 
-  const response = NextResponse.redirect(new URL(`/player/${steamId}`, req.url));
+  const response = NextResponse.redirect(new URL(`/player/${steamId}`, getBaseUrl(req)));
 
   response.cookies.set("cs2_session_steamid", steamId, {
     httpOnly: true,

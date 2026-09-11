@@ -6,11 +6,11 @@ import { Trophy, Search, CheckCircle2 } from "lucide-react";
 import { TacticalLogo } from "@/components/ui/TacticalLogo";
 
 export function Navbar() {
-  const handleSignOut = async () => {
+    const handleSignOut = async () => {
     try {
       await fetch("/api/auth/signout", { method: "POST" });
     } catch (_) {}
-    document.cookie = "token=; credentials=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    setUser(null);
     window.location.href = "/";
   };
 
