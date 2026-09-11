@@ -1,43 +1,30 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+
+export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const response = NextResponse.json({ success: true, timestamp: Date.now() });
-
-  const cookieNames = [
-    "cs2_session_steamid",
-    "steam_session",
-    "better-auth.session_token",
-    "session",
-    "token",
-    "credentials"
-  ];
-
-  const domains = [undefined, "cs2biotdata.me", ".cs2biotdata.me", "www.cs2biotdata.me"];
-
-  for (const name of cookieNames) {
-    for (const domain of domains) {
-      response.cookies.set(name, "", {
-        path: "/",
-        domain: domain,
-        expires: new Date(0),
-        maxAge: 0,
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-      });
-      // Fallback for non-httpOnly variants
-      response.cookies.set(name, "", {
-        path: "/",
-        domain: domain,
-        expires: new Date(0),
-        maxAge: 0,
-        httpOnly: false,
-        secure: true,
-        sameSite: "lax",
-      });
-    }
+  const cookieStore = await cookies();
+  
+  // 1. Delete all cookies currently received by the server
+  for (const c of cookieStore.getAll()) {
+    cookieStore.delete(c.name);
   }
 
-  response.headers.set("Cache-Control", "no-store, max-age=0");
+  // 2. Explicitly target session cookies
+  cookieStore.delete("cs2_session_steamid");
+  cookieStore.delete("steam_session");
+
+  const response = NextResponse.json({ success: true, timestamp: Date.now() });
+
+  // 3. Force explicit zero-age headers for both host-only and apex domains
+  const cookiesToKill = ["cs2_session_steamid", "steam_session"];
+  for (const name of cookiesToKill) {
+    response.cookies.set(name, "", { path: "/", maxAge: 0, expires: new Date(0) });
+    response.cookies.set(name, "", { path: "/", domain: "cs2biotdata.me", maxAge: 0, expires: new Date(0) });
+    response.cookies.set(name, "", { path: "/", domain: ".cs2biotdata.me", maxAge: 0, expires: new Date(0) });
+  }
+
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   return response;
 }
