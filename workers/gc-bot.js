@@ -39,46 +39,66 @@ csgo.on("connectedToGC", () => {
   processPendingMatches();
 });
 
-// Event emitted when Valve GC returns match details for requestGame()
 csgo.on("matchList", async (matches) => {
   if (!matches || matches.length === 0) return;
 
   for (const match of matches) {
     try {
-      const matchId = match.matchid ? match.matchid.toString() : null;
+      const matchId = match.matchid ? match.matchid.toString() : "unknown";
       console.log(`📥 Received match telemetry from GC for match: ${matchId}`);
 
-      // Extract scores and map details from match info
       const roundStats = match.roundstatsall || [];
       const latestRound = roundStats[roundStats.length - 1] || {};
       const scoreTeam1 = latestRound.team_scores ? latestRound.team_scores[0] : 13;
       const scoreTeam2 = latestRound.team_scores ? latestRound.team_scores[1] : 9;
       const mapName = match.map || latestRound.map || "de_dust2";
 
-      // Map match data into valve_matches collection
+      // Parse 10 player scoreboard entries
+      const rawPlayers = latestRound.reservation?.account_ids || [];
+      const players = rawPlayers.map((accId, idx) => {
+        const steamId64 = (BigInt(accId) + BigInt("76561197960265728")).toString();
+        const kills = latestRound.kills ? latestRound.kills[idx] : 0;
+        const assists = latestRound.assists ? latestRound.assists[idx] : 0;
+        const deaths = latestRound.deaths ? latestRound.deaths[idx] : 0;
+        const scores = latestRound.scores ? latestRound.scores[idx] : 0;
+        const mvps = latestRound.mvps ? latestRound.mvps[idx] : 0;
+
+        return {
+          steamId64,
+          kills,
+          deaths,
+          assists,
+          score: scores,
+          mvps,
+          team: idx < 5 ? 2 : 3
+        };
+      });
+
+      // Save match to valve_matches
       await db.collection("valve_matches").updateOne(
-        { matchId: matchId },
+        { matchId },
         {
           $set: {
-            matchId: matchId,
+            matchId,
             map: mapName,
-            scoreTeam1: scoreTeam1,
-            scoreTeam2: scoreTeam2,
-            winnerTeam: scoreTeam1 > scoreTeam2 ? 1 : 2,
+            scoreTeam1,
+            scoreTeam2,
+            winnerTeam: scoreTeam1 > scoreTeam2 ? 2 : 3,
+            players,
             matchData: match,
-            syncedAt: new Date(),
-          },
+            syncedAt: new Date()
+          }
         },
         { upsert: true }
       );
 
-      // Mark any matching pending codes as completed
+      // Mark the pending match queue as completed
       await db.collection("pending_matches").updateMany(
         { status: "pending" },
         { $set: { status: "completed", processedAt: new Date() } }
       );
 
-      console.log(`✅ Successfully saved match ${matchId} to MongoDB.`);
+      console.log(`✅ Stored match ${matchId} with ${players.length} players.`);
     } catch (saveErr) {
       console.error("Error processing matchList payload:", saveErr);
     }
@@ -99,10 +119,8 @@ async function processPendingMatches() {
     isProcessing = true;
     console.log(`📡 Ingesting match code from GC: ${pending.shareCode}`);
 
-    // Request match stats from Game Coordinator
     csgo.requestGame(pending.shareCode);
 
-    // Timeout guard in case Valve does not respond
     setTimeout(() => {
       isProcessing = false;
     }, 12000);
