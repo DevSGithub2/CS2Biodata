@@ -7,11 +7,13 @@ export const revalidate = 0;
 export async function GET(req: NextRequest) {
   const steamId = req.cookies.get("cs2_session_steamid")?.value;
 
+  const noCacheHeaders = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache"
+  };
+
   if (!steamId) {
-    return NextResponse.json(
-      { authenticated: false },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
-    );
+    return NextResponse.json({ authenticated: false, user: null }, { headers: noCacheHeaders });
   }
 
   try {
@@ -24,7 +26,7 @@ export async function GET(req: NextRequest) {
         authenticated: true,
         user: user || { steamId, personaName: "Player" },
       },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
+      { headers: noCacheHeaders }
     );
   } catch (err) {
     return NextResponse.json(
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest) {
         authenticated: true,
         user: { steamId, personaName: "Player" },
       },
-      { headers: { "Cache-Control": "no-store, max-age=0" } }
+      { headers: noCacheHeaders }
     );
   }
 }

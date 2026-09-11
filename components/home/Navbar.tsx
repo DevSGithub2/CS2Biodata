@@ -134,13 +134,12 @@ export function Navbar() {
               </span>
               <CheckCircle2 className="h-3.5 w-3.5 text-cyan-400" />
             </Link>
-            <button
-              type="button"
-              onClick={() => handleSignOut()}
-              className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-red-950/60 border border-red-800/80 text-red-300 hover:bg-red-900 transition-colors cursor-pointer"
-            >
-              Sign Out
-            </button>
+            <a
+    href="/api/auth/signout"
+    className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-red-950/60 border border-red-800/80 text-red-300 hover:bg-red-900 transition-colors cursor-pointer inline-flex items-center"
+  >
+    Sign Out
+  </a>
             </div>
           ) : (
             <a
