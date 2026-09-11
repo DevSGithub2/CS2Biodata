@@ -1,22 +1,37 @@
 const STEAM_KEY = process.env.STEAM_API_KEY || "";
 
 export async function resolveToSteamId64(query: string): Promise<string> {
-  const clean = query.trim();
-  if (!isNaN(Number(clean)) && clean.length === 17) {
-    return clean;
+  let clean = decodeURIComponent(query).trim();
+
+  // 1. Extract SteamID64 or vanity name from full URLs
+  if (clean.includes("steamcommunity.com")) {
+    const profilesMatch = clean.match(/\/profiles\/(\d{17})/);
+    if (profilesMatch) return profilesMatch[1];
+
+    const idMatch = clean.match(/\/id\/([^/?#]+)/);
+    if (idMatch) clean = idMatch[1];
   }
+
+  // 2. Direct 17-digit SteamID64
+  const digitsOnlyMatch = clean.match(/\b(7656119\d{10})\b/);
+  if (digitsOnlyMatch) {
+    return digitsOnlyMatch[1];
+  }
+
+  // 3. Resolve Vanity Custom URL through Steam API
   try {
     const res = await fetch(
       `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=${STEAM_KEY}&vanityurl=${encodeURIComponent(clean)}`,
       { cache: "no-store" }
     );
     const data = await res.json();
-    if (data.response?.success === 1) {
+    if (data.response?.success === 1 && data.response.steamid) {
       return data.response.steamid;
     }
   } catch (err) {
     console.error("[Steam Resolve Error]", err);
   }
+
   return clean;
 }
 
@@ -37,8 +52,13 @@ export async function fetchSteamProfileAndBans(steamId64: string) {
     const bans = banJson?.players?.[0] || null;
 
     if (!player) {
-      console.warn(`[Steam Summary Warning] No player found for steamId: ${steamId64}. Raw response:`, sumJson);
+      console.warn(`[Steam Summary Warning] No player found for steamId: ${steamId64}`);
     }
+
+    const numVacBans = bans?.NumberOfVACBans || 0;
+    const numGameBans = bans?.NumberOfGameBans || 0;
+    const isVacBanned = Boolean(bans?.VACBanned) || numVacBans > 0;
+    const isGameBanned = numGameBans > 0;
 
     return {
       steamId64,
@@ -49,8 +69,11 @@ export async function fetchSteamProfileAndBans(steamId64: string) {
       timeCreated: player?.timecreated || null,
       isPublic: player ? player.communityvisibilitystate === 3 : false,
       bans: {
-        vacBanned: Boolean(bans?.VACBanned),
-        numberOfVacBans: bans?.NumberOfVACBans || 0,
+        vacBanned: isVacBanned,
+        numberOfVacBans: numVacBans,
+        numberOfGameBans: numGameBans,
+        gameBanned: isGameBanned,
+        hasBan: isVacBanned || isGameBanned,
         daysSinceLastBan: bans?.DaysSinceLastBan || 0,
         communityBanned: Boolean(bans?.CommunityBanned),
         economyBan: bans?.EconomyBan || "none"
@@ -66,7 +89,16 @@ export async function fetchSteamProfileAndBans(steamId64: string) {
       country: "GLOBAL",
       timeCreated: null,
       isPublic: false,
-      bans: { vacBanned: false, numberOfVacBans: 0, daysSinceLastBan: 0, communityBanned: false, economyBan: "none" }
+      bans: {
+        vacBanned: false,
+        numberOfVacBans: 0,
+        numberOfGameBans: 0,
+        gameBanned: false,
+        hasBan: false,
+        daysSinceLastBan: 0,
+        communityBanned: false,
+        economyBan: "none"
+      }
     };
   }
 }
@@ -98,7 +130,7 @@ export async function fetchFriendNetworkAudit(steamId64: string) {
 
     const banMap = new Map();
     (fBan.players || []).forEach((b: any) => {
-      banMap.set(b.SteamId, Boolean(b.VACBanned || b.NumberOfVACBans > 0));
+      banMap.set(b.SteamId, Boolean(b.VACBanned || b.NumberOfVACBans > 0 || b.NumberOfGameBans > 0));
     });
 
     let bannedCount = 0;

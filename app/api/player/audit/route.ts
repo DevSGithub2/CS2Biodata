@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         steamId64,
         updatedAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
       });
-      if (cached) {
+      if (cached && cached.steam?.bans?.numberOfGameBans !== undefined) {
         return NextResponse.json({
           ...cached,
           source: "mongodb_cache",
