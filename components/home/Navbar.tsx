@@ -85,12 +85,7 @@ export function Navbar() {
               <span>Leaderboards</span>
             </Link>
             
-            <button
-              onClick={() => handleSignOut()}
-              className="px-3 py-1 text-xs font-semibold text-red-400 bg-red-950/40 border border-red-900/60 rounded hover:bg-red-900/50 hover:text-red-300 transition-colors"
-            >
-              Sign Out
-            </button>
+            
 </nav>
         </div>
 
@@ -140,7 +135,8 @@ export function Navbar() {
             </a>
           )}
         </div>
-      </div>
+      
+</div>
     </header>
   );
 }
