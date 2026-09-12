@@ -1,32 +1,40 @@
-import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import * as Sentry from "@sentry/nextjs";
+import { NextRequest, NextResponse } from "next/server";
+import { MongoClient } from "mongodb";
 
-export const dynamic = "force-dynamic";
+const uri = process.env.MONGODB_URI || "";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const steamId = searchParams.get("steamId");
+  const steamId64 = searchParams.get("steamId64");
 
-  if (!steamId) {
-    return NextResponse.json({ error: "steamId is required" }, { status: 400 });
+  if (!steamId64) {
+    return NextResponse.json({ error: "steamId64 is required" }, { status: 400 });
+  }
+
+  if (!uri) {
+    return NextResponse.json({ error: "Database not configured" }, { status: 500 });
   }
 
   try {
-    const client = await clientPromise;
-    const record = await client.db("cs2biodata").collection("gc_ranks").findOne({ steamId });
+    const client = new MongoClient(uri);
+    await client.connect();
+    const db = client.db("cs2biodata");
+
+    const record = await db.collection("player_ranks").findOne({ steamId64 });
+    await client.close();
 
     if (!record) {
       return NextResponse.json({
-        status: "pending_sync",
-        message: "Rank telemetry is queued for GC daemon inspection.",
-        steamId,
+        steamId64,
+        premier: { activeSeason: { rating: 0, wins: 0 }, seasons: [] },
+        mapRanks: [],
+        wingman: { wins: 0, rankId: 0, bestRankId: 0 },
+        isCalibrated: false,
       });
     }
 
-    return NextResponse.json({ success: true, data: record });
-  } catch (error: any) {
-    Sentry.captureException(error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(record);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

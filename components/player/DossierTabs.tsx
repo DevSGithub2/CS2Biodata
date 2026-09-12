@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { FaceitTab } from "@/components/player/FaceitTab";
+import { SkillGroupsTab } from "@/components/player/SkillGroupsTab";
 import { getOfficialMapAsset, getOfficialFaceitBadge, OFFICIAL_SKILL_GROUPS } from "@/lib/cs2-assets";
 import React, { useState, useEffect, useMemo } from "react";
 import { 
@@ -732,48 +733,7 @@ export function DossierTabs({ data }: { data: any }) {
         )}
 
         {activeTab === "ranks" && (
-          <div className="rounded-lg bg-[#070b12]/95 border border-white/[0.08] p-6 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-            <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-              <div>
-                <h3 className="text-base font-black text-white uppercase tracking-wider">
-                  CS2 Competitive Map-By-Map Skill Groups
-                </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
-                  Live per-map calibration and ranks ingested directly from Valve Game Coordinator.
-                </p>
-              </div>
-              <span className="text-xs px-2.5 py-1 bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 font-bold rounded">
-                VALVE GC PIPELINE
-              </span>
-            </div>
-
-            {loadingRanks ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3 text-cyan-400">
-                <Loader2 className="w-7 h-7 animate-spin" />
-                <span className="text-xs">QUERYING GAME COORDINATOR RANKS...</span>
-              </div>
-            ) : mapRanks.length === 0 ? (
-              <div className="py-14 text-center text-gray-500 text-xs">
-                No active competitive map calibrations returned for this account. Ensure GC Bot friendship is accepted.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {mapRanks.map((m: any, idx: number) => (
-                  <div key={idx} className="p-4 rounded bg-white/[0.02] border border-white/[0.06] hover:border-cyan-500/30 transition-all flex flex-col justify-between">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-white uppercase">{m.mapName || m.map || "Map"}</span>
-                      <span className="text-[10px] text-gray-500 font-mono">{m.wins ?? 0} Wins</span>
-                    </div>
-                    <div className="my-4">
-                      <div className="text-xs font-black text-cyan-300 tracking-wide uppercase">
-                        {m.rankName || m.rank || "Calibrating"}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <SkillGroupsTab data={{ ...data, ...(Array.isArray(mapRanks) ? { mapRanks } : mapRanks) }} />
         )}
 
         {activeTab === "faceit" && <FaceitTab data={data} />}
