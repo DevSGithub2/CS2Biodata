@@ -102,21 +102,34 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
           <div className="flex flex-wrap items-center gap-3 md:justify-end">
             {/* Country & Global Ranking */}
-            <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/40 px-3 py-2 shadow-inner">
-              <span className="text-sm">🇮🇳</span>
-              <div className="flex flex-col text-right font-mono">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Country</span>
-                <span className="text-xs font-black text-white">#672</span>
-              </div>
-            </div>
+            {(() => {
+              const countryRank = faceitData?.rankingCountry || faceitData?.country_ranking || faceitData?.player?.ranking_country;
+              const globalRank = faceitData?.rankingGlobal || faceitData?.global_ranking || faceitData?.player?.ranking_global;
 
-            <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/40 px-3 py-2 shadow-inner">
-              <span className="text-xs">🌐</span>
-              <div className="flex flex-col text-right font-mono">
-                <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Global</span>
-                <span className="text-xs font-black text-white">#14,070</span>
-              </div>
-            </div>
+              return (
+                <>
+                  {countryRank ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/40 px-3 py-2 shadow-inner">
+                      <span className="text-sm">🇮🇳</span>
+                      <div className="flex flex-col text-right font-mono">
+                        <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Country</span>
+                        <span className="text-xs font-black text-white">#{Number(countryRank).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {globalRank ? (
+                    <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/40 px-3 py-2 shadow-inner">
+                      <span className="text-xs">🌐</span>
+                      <div className="flex flex-col text-right font-mono">
+                        <span className="text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Global</span>
+                        <span className="text-xs font-black text-white">#{Number(globalRank).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              );
+            })()}
 
             {/* Official FACEIT Profile Redirect */}
             <a
