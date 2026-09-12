@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import { FaceitTab } from "@/components/player/FaceitTab";
 import { getOfficialMapAsset, getOfficialFaceitBadge, OFFICIAL_SKILL_GROUPS } from "@/lib/cs2-assets";
 import React, { useState, useEffect, useMemo } from "react";
@@ -936,9 +936,9 @@ export function DossierTabs({ data }: { data: any }) {
                         }`}
                       >
                         {/* Left: Avatar + Structured Name & Tenure */}
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          <div className={`relative w-10 h-10 rounded-md border overflow-hidden flex items-center justify-center font-bold text-sm text-white shrink-0 bg-black/60 shadow-md ${
-                            hasBan ? "border-rose-500/60 ring-1 ring-rose-500/30" : "border-white/[0.12]"
+                        <Link href={`/player/${f.steamid}`} className="flex items-center gap-3.5 min-w-0 flex-1 cursor-pointer group">
+                          <div className={`relative w-10 h-10 rounded-md border overflow-hidden flex items-center justify-center font-bold text-sm text-white shrink-0 bg-black/60 shadow-md group-hover:scale-105 transition-transform ${
+                            hasBan ? "border-rose-500/60 ring-1 ring-rose-500/30" : "border-white/[0.12] group-hover:border-cyan-400"
                           }`}>
                             {f.avatar ? (
                               <img src={f.avatar} alt={f.personaname || "User"} className="w-full h-full object-cover" loading="lazy" />
@@ -948,7 +948,7 @@ export function DossierTabs({ data }: { data: any }) {
                           </div>
 
                           <div className="min-w-0 flex flex-col justify-center gap-1">
-                            <div className="text-sm font-black text-gray-100 truncate max-w-[280px] sm:max-w-md leading-none">
+                            <div className="text-sm font-black text-gray-100 group-hover:text-cyan-300 transition-colors truncate max-w-[280px] sm:max-w-md leading-none">
                               {f.personaname || "Steam User"}
                             </div>
                             
@@ -957,12 +957,12 @@ export function DossierTabs({ data }: { data: any }) {
                                 {f.relationship || "Friend"}
                               </span>
                               <span className="text-gray-700">•</span>
-                              <span className="font-mono text-gray-500 text-[10px]">
+                              <span className="font-mono text-gray-500 text-[10px] group-hover:text-cyan-400 transition-colors">
                                 {f.steamid}
                               </span>
                             </div>
                           </div>
-                        </div>
+                        </Link>
 
                         {/* Right: Clean Separated Badges & Action */}
                         <div className="flex items-center gap-3 shrink-0 ml-3">
