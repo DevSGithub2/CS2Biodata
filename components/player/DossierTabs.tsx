@@ -194,8 +194,7 @@ export function DossierTabs({ data }: { data: any }) {
     fetch(`/api/gc/player-rank?steamId64=${steamId64}`)
       .then((res) => res.json())
       .then((res) => {
-        const list = Array.isArray(res.ranks) ? res.ranks : Array.isArray(res) ? res : [];
-        setMapRanks(list);
+        setMapRanks(res);
       })
       .catch(() => {})
       .finally(() => setLoadingRanks(false));
@@ -733,7 +732,7 @@ export function DossierTabs({ data }: { data: any }) {
         )}
 
         {activeTab === "ranks" && (
-          <SkillGroupsTab data={{ ...data, ...(Array.isArray(mapRanks) ? { mapRanks } : mapRanks) }} />
+          <SkillGroupsTab data={{ ...data, ...(typeof mapRanks === "object" ? mapRanks : {}) }} />
         )}
 
         {activeTab === "faceit" && <FaceitTab data={data} />}

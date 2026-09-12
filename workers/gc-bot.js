@@ -79,47 +79,75 @@ async function fetchAndStorePlayerProfile(steamID) {
   }
 
   try {
-    csgo.requestPlayersProfile(steamID, async (err, profile) => {
-      if (err) {
-        console.error(`❌ GC Profile fetch error for ${steamId64}:`, err);
+    // node-globaloffensive requestPlayersProfile passes (profile) directly to the callback
+    csgo.requestPlayersProfile(steamID, async (profile) => {
+      if (!profile || typeof profile !== "object") {
+        console.error(`❌ Empty or invalid GC Profile received for ${steamId64}`);
         setTimeout(() => client.removeFriend(steamID), 2000);
         return;
       }
 
-      console.log(`📊 Ingested telemetry for ${steamId64}`);
+      console.log(`📊 Successfully decoded GC Profile telemetry for ${steamId64}`);
 
-      const ranking = profile.ranking || {};
-      const activePremier = {
-        name: "Premier Active",
-        rating: ranking.rank_id || 0,
-        wins: ranking.wins || 0,
-        bestRating: ranking.rank_id || 0,
+      let activePremier = {
+        name: "Premier Season",
+        rating: 0,
+        wins: 0,
+        bestRating: 0,
         lastUpdated: "Live",
       };
 
       const mapRanks = [];
       let wingman = { wins: 0, rankId: 0, bestRankId: 0 };
 
-      const rankings = profile.rankings || [];
+      const rankings = Array.isArray(profile.rankings) ? profile.rankings : [];
+
       for (const r of rankings) {
-        if (r.ranking_type_id === 6) {
-          const mapCode = MAP_NAMES[r.map_id] || `map_${r.map_id}`;
-          mapRanks.push({
-            mapId: mapCode,
-            wins: r.wins_count || 0,
-            rankId: r.rank_id || 0,
-            bestRankId: r.rank_id || 0,
-          });
+        const typeId = r.rank_type_id || r.ranking_type_id;
+
+        // CS2 Premier Mode (rank_type_id 11 or 10)
+        if (typeId === 11 || typeId === 10) {
+          activePremier = {
+            name: "Premier Season",
+            rating: r.rank_id || 0,
+            wins: r.wins || r.wins_count || 0,
+            bestRating: r.rank_id || 0,
+            lastUpdated: "Just now",
+          };
         }
-        if (r.ranking_type_id === 7) {
+
+        // Wingman Mode (rank_type_id 7)
+        if (typeId === 7) {
           wingman = {
-            wins: r.wins_count || 0,
+            wins: r.wins || r.wins_count || 0,
             rankId: r.rank_id || 0,
             bestRankId: r.rank_id || 0,
           };
         }
+
+        // Per-map competitive skill groups (per_map_rank array or type 6)
+        if (typeId === 6 || Array.isArray(r.per_map_rank)) {
+          const mapList = Array.isArray(r.per_map_rank) ? r.per_map_rank : [r];
+          for (const m of mapList) {
+            const mapCode = MAP_NAMES[m.map_id] || `map_${m.map_id}`;
+            mapRanks.push({
+              mapId: mapCode,
+              wins: m.wins_count || m.wins || 0,
+              rankId: m.rank_id || 0,
+              bestRankId: m.rank_id || 0,
+            });
+          }
+        }
       }
 
+      // Check legacy ranking property if Premier was not in rankings array
+      if (activePremier.rating === 0 && profile.ranking) {
+        activePremier.rating = profile.ranking.rank_id || 0;
+        activePremier.wins = profile.ranking.wins || 0;
+        activePremier.bestRating = profile.ranking.rank_id || 0;
+      }
+
+      // Store in MongoDB collection `player_ranks`
       await db.collection("player_ranks").updateOne(
         { steamId64 },
         {
@@ -131,13 +159,16 @@ async function fetchAndStorePlayerProfile(steamID) {
             },
             mapRanks,
             wingman,
+            commendations: profile.commendation || {},
+            medals: profile.medals || {},
+            playerLevel: profile.player_level || 1,
             updatedAt: new Date(),
           },
         },
         { upsert: true }
       );
 
-      console.log(`💾 Saved skill groups to MongoDB for ${steamId64}`);
+      console.log(`💾 Successfully saved skill groups to MongoDB for ${steamId64}: Premier = ${activePremier.rating}, Wins = ${activePremier.wins}`);
 
       // Auto-unfriend after 2 seconds to release friend slot
       setTimeout(() => {
@@ -151,6 +182,7 @@ async function fetchAndStorePlayerProfile(steamID) {
   }
 }
 
+// Valve match ingestion queue
 csgo.on("matchList", async (matches) => {
   if (!matches || matches.length === 0) return;
 
