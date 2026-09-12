@@ -77,7 +77,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
             <div className="relative">
               <img src={avatar} alt={nickname} className="h-16 w-16 rounded-xl object-cover border-2 border-white/10 shadow-lg" />
               <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1e2025] border border-white/15">
-                <img src={levelBadge.badgePath} alt={`Level ${skillLevel}`} className="h-4 w-4 object-contain" />
+                <img src={levelBadge.badgePath} alt={`Level ${skillLevel}`} className="w-5 h-5 object-contain inline-block shrink-0" />
               </div>
             </div>
 
