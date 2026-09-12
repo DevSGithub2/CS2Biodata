@@ -18,6 +18,15 @@ const csgo = new GlobalOffensive(client);
 let mongoClient;
 let db;
 
+
+client.on("error", (err) => {
+  console.error("[GC Worker] Steam logon error:", err.message);
+});
+
+client.on("steamGuard", (domain, callback) => {
+  console.log("[GC Worker] Steam Guard code required for domain:", domain);
+});
+
 client.logOn({ accountName, password });
 
 client.on("loggedOn", () => {

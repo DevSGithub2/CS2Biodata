@@ -138,3 +138,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const steamId = searchParams.get("steamId");
+    if (!steamId) {
+      return NextResponse.json({ matches: [], error: "Missing steamId" }, { status: 400 });
+    }
+
+    const client = await clientPromise;
+    const db = client.db("cs2biodata");
+
+    let matches = await db.collection("valve_matches")
+      .find({ $or: [{ steamId }, { steamId64: steamId }] })
+      .sort({ matchTime: -1, createdAt: -1 })
+      .toArray();
+
+    if (!matches || matches.length === 0) {
+      matches = await db.collection("valvematches")
+        .find({ $or: [{ steamId }, { steamId64: steamId }] })
+        .sort({ matchTime: -1, createdAt: -1 })
+        .toArray();
+    }
+
+    return NextResponse.json({ matches });
+  } catch (err: any) {
+    console.error("[Valve Sync API] GET error:", err.message);
+    return NextResponse.json({ matches: [], error: err.message }, { status: 500 });
+  }
+}
