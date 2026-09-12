@@ -67,8 +67,14 @@ export function getOfficialMapAsset(mapId: string | null | undefined) {
   };
 }
 
-export function getMapThumbnail(mapId: string | null | undefined): string {
-  if (!mapId) return "/maps/unknown.png";
-  const clean = mapId.toLowerCase().replace("de_", "").replace("cs_", "");
-  return `/maps/${clean}.png`;
+export function getMapThumbnail(mapName?: string | null): string {
+  if (!mapName) return "/assets/maps/dust2.png";
+  
+  const m = mapName.toLowerCase()
+    .replace(/^de_/, "")
+    .replace(/^cs_/, "")
+    .replace(/\s+/g, "")
+    .trim();
+
+  return `/assets/maps/${m}.png`;
 }
