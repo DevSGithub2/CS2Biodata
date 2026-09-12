@@ -3,29 +3,32 @@ import clientPromise from "@/lib/mongodb";
 
 export async function POST(req: NextRequest) {
   try {
-    const { steamId64 } = await req.json();
+    const body = await req.json();
+    const steamId64 = body.steamId64 || body.steamId;
 
     if (!steamId64) {
       return NextResponse.json({ success: false, error: "Missing SteamID64" }, { status: 400 });
     }
 
     const client = await clientPromise;
-    const db = client.db("cs2pulse");
-    const cached = await db.collection("gc_profiles").findOne({ steamId64: String(steamId64) });
+    const db = client.db("cs2biodata");
+    const cached = await db.collection("player_ranks").findOne({ steamId64: String(steamId64) });
 
     if (!cached) {
       return NextResponse.json({
         success: false,
-        error: "No GC session recorded yet. Click 'Add GC Bot on Steam' first, wait 2 seconds for acceptance, then click Re-verify!",
+        error: "No GC session recorded yet. Ensure GC bot is active and befriend the bot on Steam.",
       });
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        premierRating: cached.premierRating,
-        wingmanData: cached.wingmanData,
-        mapSkillGroups: cached.mapSkillGroups || [],
+        premier: cached.premier,
+        wingman: cached.wingman,
+        mapRanks: cached.mapRanks || [],
+        commendations: cached.commendations,
+        medals: cached.medals,
         updatedAt: cached.updatedAt,
       },
     });

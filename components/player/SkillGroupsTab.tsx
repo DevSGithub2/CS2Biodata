@@ -24,7 +24,6 @@ interface SkillGroupsTabProps {
   data?: any;
 }
 
-// Valve Official CS2 Premier Slanted Rating Banner Component
 function OfficialPremierRatingBanner({
   rating,
   size = "md",
@@ -59,7 +58,6 @@ function OfficialPremierRatingBanner({
         boxShadow: `0 0 16px ${tier.colorHex}25`,
       }}
     >
-      {/* Official Valve Chevron Left Bars (//) */}
       <div className="flex items-center gap-1 mr-2 pl-0.5">
         <span
           className={`block ${isLarge ? "w-1.5 h-6" : isSmall ? "w-0.5 h-3.5" : "w-1 h-5"} rounded-xs`}
@@ -71,7 +69,6 @@ function OfficialPremierRatingBanner({
         />
       </div>
 
-      {/* Numeric Rating with un-skewed text */}
       <span
         className={`skew-x-[12deg] font-black italic tracking-wide text-right flex-1 ${
           isLarge ? "text-lg" : isSmall ? "text-xs" : "text-sm"
@@ -90,7 +87,7 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
   // Ingested Premier Telemetry
   const premier = data?.premier || {};
   const activeSeason = {
-    season: premier.activeSeason?.name || "Premier Active",
+    season: premier.activeSeason?.name || "Premier Season",
     timeAgo: premier.activeSeason?.lastUpdated || "Live",
     wins: premier.activeSeason?.wins ?? null,
     currentRating: premier.activeSeason?.rating ?? null,
@@ -103,10 +100,10 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
 
   // Ingested FACEIT Telemetry
   const faceit = data?.faceit || {};
-  const hasFaceit = Boolean(faceit.linked || faceit.elo);
-  const faceitLvl = faceit.level ?? null;
-  const faceitElo = faceit.elo ?? null;
-  const faceitBadge = faceitLvl ? getOfficialFaceitBadge(faceitLvl) : null;
+  const faceitLvl = Number(faceit?.skillLevel || faceit?.skill_level || faceit?.level || 0);
+  const faceitElo = Number(faceit?.elo || faceit?.faceitElo || 0);
+  const hasFaceit = Boolean(faceitLvl > 0 || faceitElo > 0 || faceit?.nickname || faceit?.player_id);
+  const faceitBadge = hasFaceit ? getOfficialFaceitBadge(faceitLvl || 1) : null;
 
   // Ingested Map Calibration Telemetry
   const incomingMapRanks: MapRankItem[] = Array.isArray(data?.mapRanks)
@@ -184,7 +181,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
             )}
           </div>
 
-          {/* Active Season Metrics */}
           <div className="grid grid-cols-3 gap-4 items-center">
             <div>
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
@@ -210,7 +206,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
             </div>
           </div>
 
-          {/* Historic Seasons Dropdown */}
           {showAllSeasons && (
             <div className="pt-3 border-t border-white/[0.06] space-y-2">
               <div className="grid grid-cols-12 text-[10px] uppercase font-bold text-gray-500 tracking-wider px-1">
@@ -253,32 +248,55 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
         </div>
 
         {/* FACEIT Integration Card */}
-        <div className="rounded-xl bg-[#090b10] border border-white/[0.08] p-4 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          <div className="flex items-center gap-2.5">
-            <span className="text-xs font-black text-orange-500 tracking-widest uppercase">
-              FACEIT
-            </span>
-            <span className="text-[11px] text-gray-500">
-              {faceitElo ? `${faceitElo.toLocaleString()} ELO` : "Unlinked / Pending"}
-            </span>
+        <div className="rounded-xl bg-[#090b10] border border-white/[0.08] p-5 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
+              {hasFaceit && faceitBadge ? (
+                <img
+                  src={faceitBadge.badgePath}
+                  alt={`FACEIT Level ${faceitLvl}`}
+                  className="w-9 h-9 object-contain drop-shadow-[0_2px_10px_rgba(255,85,0,0.35)]"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full border border-white/[0.1] bg-white/[0.02] flex items-center justify-center text-[10px] font-bold text-gray-600">
+                  —
+                </div>
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 text-[10px] font-black tracking-wider uppercase text-gray-400">
+                <svg viewBox="0 0 24 24" fill="#FF5500" className="w-3.5 h-3.5">
+                  <path d="M23.999 2.001c-.027-.378-.291-.7-.674-.823-.384-.123-.807-.024-1.091.254L.373 22.31c-.347.34-.407.876-.145 1.282.261.406.748.591 1.22.463L23.473 18.1c.334-.092.585-.357.653-.695.068-.337-.048-.686-.303-.912l-8.629-7.657L23.8 2.593c.139-.164.208-.378.199-.592z" />
+                </svg>
+                <span>FACEIT</span>
+                {hasFaceit && faceitLvl > 0 && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded font-black text-[#FF5500] bg-[#FF5500]/15 border border-[#FF5500]/30">
+                    LVL {faceitLvl}
+                  </span>
+                )}
+              </div>
+
+              <div className="text-lg font-black tracking-tight text-white mt-0.5 font-mono">
+                {faceitElo > 0 ? (
+                  <span>
+                    {faceitElo.toLocaleString()}{" "}
+                    <span className="text-[11px] font-bold text-[#FF5500]">ELO</span>
+                  </span>
+                ) : (
+                  <span className="text-xs font-bold text-gray-500 uppercase">UNLINKED</span>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            {hasFaceit && faceitBadge && faceitLvl ? (
-              <div
-                className="w-8 h-8 rounded-full border flex items-center justify-center text-xs font-black text-white shadow-md"
-                style={{
-                  borderColor: faceitBadge.color,
-                  backgroundColor: `${faceitBadge.color}33`,
-                }}
-              >
-                {faceitLvl}
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-full border border-white/[0.1] bg-black/40 flex items-center justify-center text-[10px] font-bold text-gray-600">
-                —
-              </div>
-            )}
+          <div className="text-right">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 block">
+              STATUS
+            </span>
+            <span className="text-xs font-bold font-mono text-emerald-400">
+              {hasFaceit ? "VERIFIED" : "STANDBY"}
+            </span>
           </div>
         </div>
 
@@ -291,8 +309,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
         
         {/* Competitive Per-Map Calibration */}
         <div className="rounded-xl bg-[#090b10] border border-white/[0.08] p-5 space-y-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          
-          {/* Header Bar */}
           <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
             <div className="flex items-center gap-2.5">
               <span className="text-xs font-black text-white tracking-widest uppercase">
@@ -309,7 +325,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
             </div>
           </div>
 
-          {/* Map Rows */}
           <div className="divide-y divide-white/[0.04]">
             {mapRows.map((m, idx) => {
               const curBadge = getRankBadgePath(m.rankId);
@@ -320,7 +335,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
                   key={idx}
                   className="py-2 px-1.5 flex items-center justify-between hover:bg-white/[0.02] rounded transition-colors"
                 >
-                  {/* Left: Map Pin Thumbnail + Map Name */}
                   <div className="flex items-center gap-3 min-w-[140px]">
                     <div className="relative w-6 h-6 rounded overflow-hidden shrink-0 border border-white/[0.08] bg-black/40">
                       <Image
@@ -336,12 +350,10 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
                     </span>
                   </div>
 
-                  {/* Middle: Map Wins */}
                   <div className="text-center font-mono text-xs text-gray-400 w-16">
                     {m.wins !== null ? m.wins : "—"}
                   </div>
 
-                  {/* Right: Badges */}
                   <div className="flex items-center gap-6">
                     <div className="relative w-14 h-6 flex items-center justify-center">
                       {curBadge ? (
@@ -383,52 +395,47 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
 
         {/* Wingman & CS:GO Footer Card */}
         <div className="rounded-xl bg-[#090b10] border border-white/[0.08] p-4 space-y-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-          
-          {/* Wingman Row */}
-          <div className="flex items-center justify-between py-1 px-1">
+          <div className="flex items-center justify-between py-1.5 px-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-black text-white tracking-widest uppercase">
                 WINGMAN
               </span>
             </div>
-            <div className="text-xs font-mono text-gray-400">
-              {wingman.wins !== undefined && wingman.wins !== null ? `${wingman.wins} WINS` : "—"}
+            <div className="text-xs font-mono text-gray-300 font-bold">
+              {wingman.wins !== undefined && wingman.wins !== null ? `${wingman.wins} WINS` : "0 WINS"}
             </div>
             <div className="flex items-center gap-6">
-              <div className="w-14 text-center text-[10px] text-gray-600 font-bold">
+              <div className="w-14 text-center">
                 {getRankBadgePath(wingman.rankId) ? (
-                  <div className="relative w-14 h-6 mx-auto">
-                    <Image
-                      src={getRankBadgePath(wingman.rankId)!}
-                      alt="WM Current"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  "—"
+    <div className="flex items-center justify-center w-16 h-7">
+      <img
+        src={getRankBadgePath(wingman.rankId)!}
+        alt="Wingman Current"
+        className="h-6 w-auto object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+      />
+    </div>
+  ) : (
+                  <span className="text-[10px] text-gray-500 font-bold bg-white/[0.04] px-2 py-0.5 rounded border border-white/[0.06]">
+                    EXPIRED
+                  </span>
                 )}
               </div>
-              <div className="w-14 text-center text-[10px] text-gray-600 font-bold">
+              <div className="w-14 text-center">
                 {getRankBadgePath(wingman.bestRankId) ? (
-                  <div className="relative w-14 h-6 mx-auto">
-                    <Image
-                      src={getRankBadgePath(wingman.bestRankId)!}
-                      alt="WM Best"
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  "—"
+    <div className="flex items-center justify-center w-16 h-7">
+      <img
+        src={getRankBadgePath(wingman.bestRankId)!}
+        alt="Wingman Best"
+        className="h-6 w-auto object-contain drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]"
+      />
+    </div>
+  ) : (
+                  <span className="text-[10px] text-gray-600 font-bold">—</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Legacy CS:GO Row */}
           <div className="flex items-center justify-between pt-2.5 border-t border-white/[0.04] px-1">
             <span className="text-xs font-black text-gray-400 tracking-widest uppercase">
               CS:GO
@@ -457,7 +464,6 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
               </div>
             </div>
           </div>
-
         </div>
 
       </div>

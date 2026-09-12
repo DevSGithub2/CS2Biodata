@@ -1,5 +1,20 @@
 "use client";
 
+function getFaceitLevelFromElo(elo: number | null | undefined, fallbackLevel?: number | null): number {
+  const e = Number(elo) || 0;
+  if (e >= 2001) return 10;
+  if (e >= 1751) return 9;
+  if (e >= 1531) return 8;
+  if (e >= 1351) return 7;
+  if (e >= 1201) return 6;
+  if (e >= 1051) return 5;
+  if (e >= 901) return 4;
+  if (e >= 751) return 3;
+  if (e >= 501) return 2;
+  if (e >= 1) return 1;
+  return Math.max(1, Math.min(10, Number(fallbackLevel) || 1));
+}
+
 import React, { useEffect, useState } from "react";
 import { getOfficialFaceitBadge, getMapThumbnail } from "@/lib/cs2-assets";
 import { ExternalLink, Flame } from "lucide-react";
@@ -183,7 +198,8 @@ export function FaceitTab({ data }: FaceitTabProps) {
             <div className="py-16 text-center text-xs text-zinc-500 font-mono">No recent match history found.</div>
           ) : (
             matches.map((m: any) => {
-              const lvlBadge = getOfficialFaceitBadge(m.elo);
+              const rowLvl = getFaceitLevelFromElo(m.elo, m.skillLevel || m.skill_level);
+                const lvlBadge = getOfficialFaceitBadge(rowLvl);
               const mapThumb = getMapThumbnail(m.map);
               const roomUrl = m.id && m.id.length > 5 
                 ? `https://www.faceit.com/en/cs2/room/${m.id}` 
@@ -212,7 +228,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
                   {/* Level Badge & Elo */}
                   <div className="col-span-2 flex items-center gap-2.5">
-                    <img src={lvlBadge.badgePath} alt={`Level ${lvlBadge.label}`} className="h-6 w-6 object-contain" />
+                    <img src={lvlBadge.badgePath} alt={lvlBadge.name} className="h-5 w-5 object-contain shrink-0 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
                     <div className="flex items-center gap-1 font-mono">
                       <span className="font-black text-white">{m.elo}</span>
                       <span className={`text-[10px] font-bold ${m.eloChange > 0 ? "text-emerald-400" : "text-rose-400"}`}>
@@ -239,7 +255,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
                   {/* Map Emblem & Faceit Room Link */}
                   <div className="col-span-1 flex items-center justify-end gap-2">
-                    <img src={mapThumb} alt={m.map} className="h-7 w-7 rounded-full object-cover border border-white/[0.15] shadow-sm shrink-0" />
+                    <img src={mapThumb} alt={m.map || "Map"} className="h-4 w-4 rounded-sm object-cover shrink-0" onError={(e) => { e.currentTarget.src = "/maps/de_dust2.png"; }} />
                     <a
                       href={roomUrl}
                       target="_blank"

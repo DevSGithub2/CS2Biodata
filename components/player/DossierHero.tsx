@@ -151,8 +151,9 @@ export function DossierHero({ data }: { data: any }) {
   };
 
   // Premier State
-  const isPremierRanked = typeof premier?.rating === "number" && premier.rating > 0;
-  const premierTier = getPremierTier(premier?.rating);
+  const premierRating = Number(premier?.activeSeason?.rating || premier?.rating || data?.premierRating || 0);
+  const isPremierRanked = premierRating > 0;
+  const premierTier = getPremierTier(premierRating);
 
   // FACEIT State Check: verify if player actually exists on FACEIT
   const hasFaceit = Boolean(
@@ -234,44 +235,64 @@ export function DossierHero({ data }: { data: any }) {
           <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
             
             {/* 1. CS2 Premier Medal */}
-            <div
-              className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all min-w-[170px]"
-              style={{
-                borderColor: `${premierTier.borderColor}40`,
-                backgroundColor: isPremierRanked ? `${premierTier.colorHex}0c` : "rgba(255, 255, 255, 0.02)",
-              }}
-            >
-              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
-                <img
-                  src={premierTier.badgePath}
-                  alt={premierTier.label}
-                  className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
-                  <CS2PremierIcon className="w-3 h-3" color={premierTier.colorHex} />
-                  <span>PREMIER</span>
-                  {isPremierRanked && (
-                    <span
-                      className="text-[8px] px-1 py-0.5 rounded font-black uppercase"
-                      style={{ color: premierTier.colorHex, backgroundColor: `${premierTier.colorHex}20` }}
-                    >
-                      {premierTier.label}
-                    </span>
-                  )}
-                </div>
+              <div
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all min-w-[170px]"
+                style={{
+                  borderColor: isPremierRanked ? `${premierTier.colorHex}40` : "rgba(255, 255, 255, 0.08)",
+                  backgroundColor: isPremierRanked ? `${premierTier.colorHex}0c` : "rgba(255, 255, 255, 0.02)",
+                  boxShadow: isPremierRanked ? `0 0 20px ${premierTier.colorHex}15` : "none"
+                }}
+              >
+                {/* Identical left badge box */}
                 <div
-                  className="text-base font-black tracking-tight font-mono leading-tight mt-0.5"
-                  style={{ color: premierTier.colorHex }}
+                  className="w-12 h-12 rounded-xl bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1"
+                  style={{
+                    boxShadow: isPremierRanked ? `0 0 14px ${premierTier.colorHex}20` : "none"
+                  }}
                 >
-                  {isPremierRanked ? premier.rating.toLocaleString() : "UNRANKED"}
+                  <CS2PremierIcon
+                    className="w-6 h-6"
+                    color={isPremierRanked ? premierTier.colorHex : "#6c757d"}
+                  />
+                </div>
+
+                {/* Right content aligned identically to FACEIT & VAC */}
+                <div>
+                  <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
+                    <CS2PremierIcon className="w-3 h-3" color={isPremierRanked ? premierTier.colorHex : "#6c757d"} />
+                    <span>CS2 PREMIER</span>
+                  </div>
+                  <div className="mt-0.5">
+                    {isPremierRanked ? (
+                      <div
+                        className="relative inline-flex items-center skew-x-[-12deg] px-2 py-0.5 rounded-[2px] border"
+                        style={{
+                          backgroundColor: `${premierTier.colorHex}25`,
+                          borderColor: `${premierTier.colorHex}80`,
+                          boxShadow: `0 0 8px ${premierTier.colorHex}25`
+                        }}
+                      >
+                        <div className="flex items-center gap-0.5 mr-1 pl-0.5">
+                          <span className="block w-0.5 h-3.5 rounded-xs" style={{ backgroundColor: premierTier.colorHex }} />
+                          <span className="block w-0.5 h-3.5 rounded-xs" style={{ backgroundColor: premierTier.colorHex }} />
+                        </div>
+                        <span
+                          className="skew-x-[12deg] text-xs font-black italic tracking-wide"
+                          style={{ color: premierTier.colorHex }}
+                        >
+                          {premierRating.toLocaleString()}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">
+                        UNRANKED
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* 2. FACEIT Official Badge */}
+              {/* 2. FACEIT Official Badge */}
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/30 bg-[#FF5500]/[0.04] transition-all min-w-[170px]">
               <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
                 {hasFaceit && faceitBadge ? (

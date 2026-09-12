@@ -54,7 +54,6 @@ csgo.on("connectedToGC", () => {
   processPendingMatches();
 });
 
-// Auto-accept incoming friend requests
 client.on("friendRelationship", async (steamID, relationship) => {
   const sid64 = steamID.getSteamID64();
 
@@ -71,6 +70,7 @@ client.on("friendRelationship", async (steamID, relationship) => {
 
 async function fetchAndStorePlayerProfile(steamID) {
   const steamId64 = steamID.getSteamID64();
+  const accountId = steamID.accountid;
 
   if (!csgo.haveGCSession) {
     console.warn("⚠️ No active GC session. Cannot request profile.");
@@ -79,22 +79,31 @@ async function fetchAndStorePlayerProfile(steamID) {
   }
 
   try {
-    // node-globaloffensive requestPlayersProfile passes (profile) directly to the callback
-    csgo.requestPlayersProfile(steamID, async (profile) => {
-      if (!profile || typeof profile !== "object") {
-        console.error(`❌ Empty or invalid GC Profile received for ${steamId64}`);
-        setTimeout(() => client.removeFriend(steamID), 2000);
-        return;
-      }
+    // Send raw GC Protobuf message with request_level: 32 for full per-map telemetry
+    const payload = {
+      account_id: accountId,
+      request_level: 32
+    };
 
-      console.log(`📊 Successfully decoded GC Profile telemetry for ${steamId64}`);
+    // k_EMsgGCCStrike15_v2_ClientRequestPlayersProfile = 9127
+    if (csgo._send) {
+      csgo._send(9127, payload);
+    } else {
+      csgo.requestPlayersProfile(steamID);
+    }
+
+    const onProfileResponse = async (profile) => {
+      if (!profile || profile.account_id !== accountId) return;
+      csgo.removeListener("playersProfile", onProfileResponse);
+
+      console.log(`📊 Successfully decoded full GC Profile telemetry for ${steamId64}`);
 
       let activePremier = {
         name: "Premier Season",
         rating: 0,
         wins: 0,
         bestRating: 0,
-        lastUpdated: "Live",
+        lastUpdated: "Just now",
       };
 
       const mapRanks = [];
@@ -105,7 +114,7 @@ async function fetchAndStorePlayerProfile(steamID) {
       for (const r of rankings) {
         const typeId = r.rank_type_id || r.ranking_type_id;
 
-        // CS2 Premier Mode (rank_type_id 11 or 10)
+        // CS2 Premier Mode (type 11 or 10)
         if (typeId === 11 || typeId === 10) {
           activePremier = {
             name: "Premier Season",
@@ -116,7 +125,7 @@ async function fetchAndStorePlayerProfile(steamID) {
           };
         }
 
-        // Wingman Mode (rank_type_id 7)
+        // Wingman Mode (type 7)
         if (typeId === 7) {
           wingman = {
             wins: r.wins || r.wins_count || 0,
@@ -125,10 +134,9 @@ async function fetchAndStorePlayerProfile(steamID) {
           };
         }
 
-        // Per-map competitive skill groups (per_map_rank array or type 6)
-        if (typeId === 6 || Array.isArray(r.per_map_rank)) {
-          const mapList = Array.isArray(r.per_map_rank) ? r.per_map_rank : [r];
-          for (const m of mapList) {
+        // Per-map competitive skill groups
+        if (Array.isArray(r.per_map_rank) && r.per_map_rank.length > 0) {
+          for (const m of r.per_map_rank) {
             const mapCode = MAP_NAMES[m.map_id] || `map_${m.map_id}`;
             mapRanks.push({
               mapId: mapCode,
@@ -137,17 +145,24 @@ async function fetchAndStorePlayerProfile(steamID) {
               bestRankId: m.rank_id || 0,
             });
           }
+        } else if (typeId === 6) {
+          const mapCode = MAP_NAMES[r.map_id] || `map_${r.map_id}`;
+          mapRanks.push({
+            mapId: mapCode,
+            wins: r.wins_count || r.wins || 0,
+            rankId: r.rank_id || 0,
+            bestRankId: r.rank_id || 0,
+          });
         }
       }
 
-      // Check legacy ranking property if Premier was not in rankings array
+      // Fallback ranking property check
       if (activePremier.rating === 0 && profile.ranking) {
         activePremier.rating = profile.ranking.rank_id || 0;
         activePremier.wins = profile.ranking.wins || 0;
         activePremier.bestRating = profile.ranking.rank_id || 0;
       }
 
-      // Store in MongoDB collection `player_ranks`
       await db.collection("player_ranks").updateOne(
         { steamId64 },
         {
@@ -168,24 +183,31 @@ async function fetchAndStorePlayerProfile(steamID) {
         { upsert: true }
       );
 
-      console.log(`💾 Successfully saved skill groups to MongoDB for ${steamId64}: Premier = ${activePremier.rating}, Wins = ${activePremier.wins}`);
+      console.log(`💾 Saved complete skill groups to MongoDB for ${steamId64}`);
 
-      // Auto-unfriend after 2 seconds to release friend slot
       setTimeout(() => {
         console.log(`👋 Auto-unfriending ${steamId64}`);
         client.removeFriend(steamID);
       }, 2000);
-    });
+    };
+
+    csgo.on("playersProfile", onProfileResponse);
+
+    // Timeout safety fallback
+    setTimeout(() => {
+      csgo.removeListener("playersProfile", onProfileResponse);
+      client.removeFriend(steamID);
+    }, 8000);
+
   } catch (ex) {
     console.error(`Exception during profile fetch for ${steamId64}:`, ex);
     setTimeout(() => client.removeFriend(steamID), 2000);
   }
 }
 
-// Valve match ingestion queue
+// Keep standard match ingestion worker running
 csgo.on("matchList", async (matches) => {
   if (!matches || matches.length === 0) return;
-
   for (const match of matches) {
     try {
       const matchId = match.matchid ? match.matchid.toString() : "unknown";
@@ -239,22 +261,15 @@ csgo.on("matchList", async (matches) => {
 
 async function processPendingMatches() {
   if (isProcessing || !csgo.haveGCSession) return;
-
   try {
     const pending = await db
       .collection("pending_matches")
       .findOne({ status: "pending" });
-
     if (!pending) return;
-
     isProcessing = true;
     csgo.requestGame(pending.shareCode);
-
-    setTimeout(() => {
-      isProcessing = false;
-    }, 12000);
+    setTimeout(() => { isProcessing = false; }, 12000);
   } catch (err) {
-    console.error("Pending match error:", err);
     isProcessing = false;
   }
 }

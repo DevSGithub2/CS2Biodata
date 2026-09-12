@@ -33,6 +33,14 @@ export default function PlayerDossierPage() {
       }
 
       setData(result);
+      fetch(`/api/gc/player-rank?steamId64=${encodeURIComponent(result?.steam?.steamId64 || result?.player?.steamId || id)}`)
+        .then(r => r.json())
+        .then(ranks => {
+          if (ranks && !ranks.error) {
+            setData((prev: any) => ({ ...prev, ...ranks }));
+          }
+        })
+        .catch(() => {});
     } catch (err: any) {
       setError(err.message || "Failed to retrieve telemetry profile.");
     } finally {
