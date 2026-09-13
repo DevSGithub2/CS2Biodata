@@ -44,16 +44,12 @@ export function getPremierTier(rating: number | null | undefined) {
   return { name: "Grey", hex: "#b0c3d9", colorHex: "#b0c3d9", bg: "rgba(176,195,217,0.12)", border: "rgba(176,195,217,0.4)", badgePath: "/ranks/premier/medal.svg" };
 }
 
-export function getOfficialFaceitBadge(level: number | null | undefined) {
-  const lvl = Number(level || 1);
-  const clamped = Math.max(1, Math.min(10, lvl));
-  const badgePath = `/ranks/faceit/${clamped}.svg`;
+export function getOfficialFaceitBadge(level: number | string | null | undefined) {
+  const lvl = Math.max(1, Math.min(10, Number(level) || 1));
   return {
-    badgePath,
-    name: `Level ${clamped}`,
-    label: `Level ${clamped}`,
-    level: clamped,
-    toString: () => badgePath
+    level: lvl,
+    name: `Level ${lvl}`,
+    badgePath: `/faceit/faceit${lvl}.svg`
   };
 }
 

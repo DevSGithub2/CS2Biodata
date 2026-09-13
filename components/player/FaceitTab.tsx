@@ -1,5 +1,6 @@
 "use client";
 
+import { FaceitSkillBadge } from "@/components/ui/FaceitSkillBadge";
 function getFaceitLevelFromElo(elo: number | null | undefined, fallbackLevel?: number | null): number {
   const e = Number(elo) || 0;
   if (e >= 2001) return 10;
@@ -241,7 +242,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
                   {/* Level Badge & Elo */}
                   <div className="col-span-2 flex items-center gap-2.5">
-                    <img src={lvlBadge.badgePath} alt={lvlBadge.name} className="h-5 w-5 object-contain shrink-0 drop-shadow-[0_1px_4px_rgba(0,0,0,0.5)]" />
+                    <FaceitSkillBadge level={m.level || m.skillLevel || skillLevel} size={22} />
                     <div className="flex items-center gap-1 font-mono">
                       <span className="font-black text-white">{m.elo}</span>
                       <span className={`text-[10px] font-bold ${m.eloChange > 0 ? "text-emerald-400" : "text-rose-400"}`}>
