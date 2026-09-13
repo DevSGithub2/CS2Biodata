@@ -1,17 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { fetchFaceitStats } from "@/lib/services/faceit";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const steamId = searchParams.get("steamId") || "76561198877011661";
+export const dynamic = "force-dynamic";
 
-  try {
-    const stats = await fetchFaceitStats(steamId);
-    if (!stats) {
-      return NextResponse.json({ error: "Failed to fetch FACEIT stats" }, { status: 404 });
-    }
-    return NextResponse.json(stats);
-  } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const steamId = searchParams.get("steamId") || searchParams.get("steamId64");
+
+  if (!steamId) {
+    return NextResponse.json({ error: "Missing steamId parameter" }, { status: 400 });
   }
+
+  const data = await fetchFaceitStats(steamId);
+  if (!data) {
+    return NextResponse.json({ error: "No FACEIT profile found" }, { status: 404 });
+  }
+
+  return NextResponse.json(data);
 }
