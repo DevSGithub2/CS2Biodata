@@ -2,9 +2,9 @@
 
 import React, { useState } from "react";
 import { getOfficialFaceitBadge, getPremierTier } from "@/lib/cs2-assets";
-import { ExternalLink, Calendar, Database, X, Copy, Check } from "lucide-react";
+import { ExternalLink, Calendar, Database, X, Copy, Check, ShieldCheck, ShieldAlert, Award } from "lucide-react";
 
-// Official CS2 Premier Medal Logo (Vector)
+// Official CS2 Premier Medal Icon
 function CS2PremierIcon({ className = "w-4 h-4", color = "#ffdb38" }: { className?: string; color?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className}>
@@ -23,7 +23,7 @@ function CS2PremierIcon({ className = "w-4 h-4", color = "#ffdb38" }: { classNam
   );
 }
 
-// Official FACEIT Chevron Logo (Vector)
+// Official FACEIT Chevron
 function FaceitLogoIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="#FF5500" className={className}>
@@ -32,65 +32,60 @@ function FaceitLogoIcon({ className = "w-4 h-4" }: { className?: string }) {
   );
 }
 
-// Official Valve VAC Tactical Security Shield Logo (Vector)
-function ValveVacShieldIcon({ className = "w-5 h-5", isClean = true }: { className?: string; isClean?: boolean }) {
-  const strokeColor = isClean ? "#10B981" : "#F43F5E";
-  const fillColor = isClean ? "rgba(16, 185, 129, 0.15)" : "rgba(244, 63, 94, 0.2)";
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M12 22S20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z"
-        fill={fillColor}
-        stroke={strokeColor}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {isClean ? (
-        <path
-          d="M9 12L11 14L15 9.5"
-          stroke={strokeColor}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      ) : (
-        <path
-          d="M9 9L15 15M15 9L9 15"
-          stroke={strokeColor}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
-    </svg>
-  );
+function getSteamLevelTier(lvl: number) {
+  if (lvl >= 100) return { border: "border-purple-500", text: "text-purple-300", bg: "bg-purple-950/50", glow: "shadow-[0_0_12px_rgba(168,85,247,0.35)]" };
+  if (lvl >= 50) return { border: "border-yellow-500", text: "text-yellow-300", bg: "bg-yellow-950/50", glow: "shadow-[0_0_12px_rgba(234,179,8,0.35)]" };
+  if (lvl >= 40) return { border: "border-blue-500", text: "text-blue-300", bg: "bg-blue-950/50", glow: "shadow-[0_0_12px_rgba(59,130,246,0.35)]" };
+  if (lvl >= 30) return { border: "border-emerald-500", text: "text-emerald-300", bg: "bg-emerald-950/50", glow: "shadow-[0_0_12px_rgba(16,185,129,0.35)]" };
+  if (lvl >= 20) return { border: "border-orange-500", text: "text-orange-300", bg: "bg-orange-950/50", glow: "shadow-[0_0_12px_rgba(249,115,22,0.35)]" };
+  if (lvl >= 10) return { border: "border-rose-500", text: "text-rose-300", bg: "bg-rose-950/50", glow: "shadow-[0_0_12px_rgba(244,63,94,0.35)]" };
+  return { border: "border-zinc-500", text: "text-zinc-300", bg: "bg-zinc-800/50", glow: "shadow-[0_0_12px_rgba(113,113,122,0.2)]" };
 }
 
 export function DossierHero({ data }: { data: any }) {
   const [showDrawer, setShowDrawer] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const steam = data?.steam || {};
+  const steam = data?.steam || data?.player || {};
   const bans = steam?.bans || data?.bans || {};
-  const faceit = data?.faceit;
-  const premier = data?.premier;
+  const faceit = data?.faceit || steam?.faceit;
+  const premier = data?.premier || steam?.premier;
 
-  const personaName = steam?.personaName || "Unknown Operative";
-  const steamId64 = steam?.steamId64 || data?.steamId64 || "";
-  const avatar = steam?.avatar || "";
-  const country = steam?.country && steam?.country !== "GLOBAL" ? steam.country.toLowerCase() : null;
-  const profileUrl = steam?.profileUrl || (steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : "#");
+  const personaName = steam?.personaName || steam?.personaname || "Unknown Operative";
+  const steamId64 = steam?.steamId64 || steam?.steamid || data?.steamId64 || "";
+  const avatar = steam?.avatar || steam?.avatarfull || "";
+  const country = steam?.country || steam?.loccountrycode;
+  const profileUrl = steam?.profileUrl || steam?.profileurl || (steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : "#");
 
-  const createdDate = steam?.timeCreated
-    ? new Date(steam.timeCreated * 1000).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+  // Robust Level Parsing
+  const rawLvl = data?.steamLevel ?? steam?.steamLevel ?? steam?.level ?? data?.level;
+  const steamLevel = rawLvl !== undefined && rawLvl !== null ? Number(rawLvl) : null;
+  const levelStyle = getSteamLevelTier(steamLevel || 0);
+
+  // Robust Time Parsing
+  const rawTime = steam?.timeCreated ?? steam?.timecreated ?? data?.timeCreated;
+  const timeCreated = rawTime ? Number(rawTime) : null;
+  const yearsOld = data?.yearsOld ?? (timeCreated ? Math.floor((Date.now() - (timeCreated * 1000)) / (365.25 * 24 * 3600 * 1000)) : null);
+  const createdDate = timeCreated
+    ? new Date(timeCreated * 1000).toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : null;
+
+  const personaState = steam?.personaState ?? steam?.personastate ?? 0;
+  const isOnline = personaState > 0;
+
+  // Premier State
+  const premierRating = Number(premier?.activeSeason?.rating || premier?.rating || data?.premierRating || 0);
+  const isPremierRanked = premierRating > 0;
+  const premierTier = getPremierTier(premierRating);
+
+  // FACEIT State
+  const hasFaceit = Boolean(faceit && (faceit.skillLevel || faceit.elo || faceit.nickname));
+  const faceitBadge = hasFaceit ? getOfficialFaceitBadge(faceit?.skillLevel || faceit?.elo || 1) : null;
 
   // SteamID Calculations
   let steamID = "N/A";
   let steamID3 = "N/A";
   let steamID3NoBrackets = "N/A";
-
   try {
     if (steamId64 && /^\d+$/.test(steamId64)) {
       const bId = BigInt(steamId64);
@@ -106,92 +101,84 @@ export function DossierHero({ data }: { data: any }) {
     }
   } catch {}
 
-  const rawProfileUrl = steam?.profileUrl || (steamId64 ? `https://steamcommunity.com/profiles/${steamId64}/` : "");
-  let customURL = "";
-  if (rawProfileUrl.includes("/id/")) {
-    customURL = rawProfileUrl.split("/id/")[1]?.replace(/\/$/, "") || "";
-  } else if (steam?.personaName) {
-    customURL = encodeURIComponent(steam.personaName.toLowerCase().replace(/\s+/g, ""));
-  }
-
-  const fullUrl = steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : "N/A";
-  const fullUrlWithCustom = customURL ? `https://steamcommunity.com/id/${customURL}` : "None Configured";
-  const steamIoUrl = steamId64 ? `https://steamid.io/lookup/${steamId64}` : "https://steamid.io";
-
-  // Comprehensive VAC ban detection across API schema variations
-    // Comprehensive ban detection: VAC + Game Ban (Overwatch) + Community
-  const numVacBans = bans?.numberOfVacBans ?? bans?.NumberOfVACBans ?? 0;
-  const numGameBans = bans?.numberOfGameBans ?? bans?.NumberOfGameBans ?? 0;
-  const totalBans = numVacBans + numGameBans;
-  const isVacBanned = Boolean(bans?.vacBanned || bans?.VACBanned || numVacBans > 0);
-  const isGameBanned = numGameBans > 0;
-  const isBanned = isVacBanned || isGameBanned;
-
-  const daysSinceLastBan = bans?.daysSinceLastBan ?? bans?.DaysSinceLastBan ?? 0;
-  const isCommunityBanned = Boolean(bans?.communityBanned || bans?.CommunityBanned);
-  const economyBan = bans?.economyBan || bans?.EconomyBan || "none";
-  const isPublic = steam?.isPublic ?? true;
-
   const rows = [
-    { key: "steamID", label: "a steamID", value: steamID, isLink: false },
-    { key: "steamID3", label: "a steamID3", value: steamID3, isLink: false },
-    { key: "steamID3NoBrackets", label: "a steamID3 without brackets", value: steamID3NoBrackets, isLink: false },
-    { key: "steamID64", label: "a steamID64", value: steamId64 || "N/A", isLink: false },
-    { key: "customURL", label: "a customURL", value: customURL || "none", isLink: false },
-    { key: "fullUrl", label: "a full URL", value: fullUrl, isLink: true, href: fullUrl },
-    { key: "fullUrlWithCustom", label: "a full URL with customURL", value: fullUrlWithCustom, isLink: !!customURL, href: fullUrlWithCustom },
-    { key: "steamIoLink", label: "a steamID.io lookup", value: steamIoUrl, isLink: true, href: steamIoUrl },
+    { key: "steamID", label: "steamID", value: steamID },
+    { key: "steamID3", label: "steamID3", value: steamID3 },
+    { key: "steamID3NoBrackets", label: "steamID3 (no brackets)", value: steamID3NoBrackets },
+    { key: "steamID64", label: "steamID64", value: steamId64 || "N/A" },
+    { key: "profileUrl", label: "Profile Link", value: profileUrl, isLink: true },
   ];
 
   const handleCopy = (key: string, value: string) => {
-    if (!value || value === "N/A" || value === "None Configured") return;
+    if (!value || value === "N/A") return;
     navigator.clipboard.writeText(value);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 1800);
   };
 
-  // Premier State
-  const premierRating = Number(premier?.activeSeason?.rating || premier?.rating || data?.premierRating || 0);
-  const isPremierRanked = premierRating > 0;
-  const premierTier = getPremierTier(premierRating);
-
-  // FACEIT State Check: verify if player actually exists on FACEIT
-  const hasFaceit = Boolean(
-    faceit &&
-    (faceit.skillLevel || faceit.elo || faceit.nickname || faceit.player_id || faceit.id)
-  );
-  const faceitBadge = hasFaceit ? getOfficialFaceitBadge(faceit?.skillLevel || faceit?.elo || 1) : null;
+  const numVacBans = bans?.NumberOfVACBans ?? bans?.numberOfVacBans ?? 0;
+  const numGameBans = bans?.NumberOfGameBans ?? bans?.numberOfGameBans ?? 0;
+  const isClean = numVacBans === 0 && numGameBans === 0;
 
   return (
     <>
-      <div className="relative rounded-lg bg-[#070b12]/95 border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md p-5 sm:p-6 font-mono">
-        <span className="absolute top-0 left-0 w-2.5 h-2.5 border-t border-l border-cyan-400/40 rounded-tl" />
-        <span className="absolute top-0 right-0 w-2.5 h-2.5 border-t border-r border-cyan-400/40 rounded-tr" />
-        <span className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b border-l border-cyan-400/40 rounded-bl" />
-        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b border-r border-cyan-400/40 rounded-br" />
+      <div className="relative rounded-lg bg-[#070b12]/95 border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-md p-5 sm:p-6 font-mono">
+        {/* Tactical HUD Corner Reticles */}
+        <span className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-cyan-400/60 rounded-tl" />
+        <span className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-cyan-400/60 rounded-tr" />
+        <span className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-cyan-400/60 rounded-bl" />
+        <span className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-cyan-400/60 rounded-br" />
 
-        <div className="flex flex-col lg:flex-row items-center lg:items-center justify-between gap-6">
-          
-          {/* Left: Avatar + Unified Action Layout */}
-          <div className="flex items-center gap-4 text-left w-full lg:w-auto">
-            <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-lg border border-white/[0.14] overflow-hidden bg-black/50 flex items-center justify-center shrink-0 shadow-[0_4px_20px_rgba(0,0,0,0.5)] ring-1 ring-cyan-500/10">
-              {avatar ? (
-                <img src={avatar} alt={personaName} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-gray-500 font-bold text-2xl">?</span>
-              )}
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          {/* Left: Avatar + Identity Section */}
+          <div className="flex items-center gap-5 text-left w-full lg:w-auto">
+            <div className="relative shrink-0 group">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl border border-white/[0.16] overflow-hidden bg-black/60 shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-1 ring-cyan-500/20">
+                {avatar ? (
+                  <img src={avatar} alt={personaName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                ) : (
+                  <span className="text-gray-500 font-bold text-2xl flex items-center justify-center h-full">?</span>
+                )}
+
+                {/* Status Dot */}
+                <div className="absolute bottom-1 right-1 flex items-center justify-center">
+                  {isOnline ? (
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 border-2 border-[#070b12]"></span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex rounded-full h-3 w-3 bg-zinc-600 border-2 border-[#070b12]"></span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col justify-center gap-2 min-w-0">
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-[260px] leading-none">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-[280px] leading-none">
                   {personaName}
                 </h1>
 
+                {/* Always Show Level If Available or Greater Than 0 */}
+                {steamLevel !== null && steamLevel !== undefined && (
+                  <div className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${levelStyle.border} ${levelStyle.bg} ${levelStyle.glow} transition-all`}>
+                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider">LVL</span>
+                    <span className={`text-xs font-black ${levelStyle.text}`}>{steamLevel}</span>
+                  </div>
+                )}
+
+                {/* Dynamic Years Badge */}
+                {yearsOld !== null && yearsOld >= 0 && (
+                  <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                    <span className="text-[10px] font-bold">★ {yearsOld} YRS</span>
+                  </div>
+                )}
+
                 {country && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/[0.04] border border-white/[0.08] rounded shrink-0">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/[0.04] border border-white/[0.08] rounded-full shrink-0">
                     <img
-                      src={`https://flagcdn.com/20x15/${country}.png`}
+                      src={`https://flagcdn.com/20x15/${country.toLowerCase()}.png`}
                       alt={country.toUpperCase()}
                       className="w-3.5 h-2.5 object-cover rounded-[1px]"
                     />
@@ -202,6 +189,7 @@ export function DossierHero({ data }: { data: any }) {
                 )}
               </div>
 
+              {/* Action Buttons */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDrawer(true)}
@@ -225,267 +213,107 @@ export function DossierHero({ data }: { data: any }) {
               {createdDate && (
                 <div className="flex items-center gap-1.5 text-[11px] text-gray-500 leading-none pl-0.5">
                   <Calendar className="w-3 h-3 text-gray-500" />
-                  <span>Service Since {createdDate}</span>
+                  <span>Member since {createdDate}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Right: Badge Matrix */}
-          <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3 w-full lg:w-auto">
-            
-            {/* 1. CS2 Premier Medal */}
-              <div
-                className="flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-all min-w-[170px]"
-                style={{
-                  borderColor: isPremierRanked ? `${premierTier.colorHex}40` : "rgba(255, 255, 255, 0.08)",
-                  backgroundColor: isPremierRanked ? `${premierTier.colorHex}0c` : "rgba(255, 255, 255, 0.02)",
-                  boxShadow: isPremierRanked ? `0 0 20px ${premierTier.colorHex}15` : "none"
-                }}
-              >
-                {/* Identical left badge box */}
-                <div
-                  className="w-12 h-12 rounded-xl bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1"
-                  style={{
-                    boxShadow: isPremierRanked ? `0 0 14px ${premierTier.colorHex}20` : "none"
-                  }}
-                >
-                  <CS2PremierIcon
-                    className="w-6 h-6"
-                    color={isPremierRanked ? premierTier.colorHex : "#6c757d"}
-                  />
-                </div>
-
-                {/* Right content aligned identically to FACEIT & VAC */}
-                <div>
-                  <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
-                    <CS2PremierIcon className="w-3 h-3" color={isPremierRanked ? premierTier.colorHex : "#6c757d"} />
-                    <span>CS2 PREMIER</span>
-                  </div>
-                  <div className="mt-0.5">
-                    {isPremierRanked ? (
-                      <div
-                        className="relative inline-flex items-center skew-x-[-12deg] px-2 py-0.5 rounded-[2px] border"
-                        style={{
-                          backgroundColor: `${premierTier.colorHex}25`,
-                          borderColor: `${premierTier.colorHex}80`,
-                          boxShadow: `0 0 8px ${premierTier.colorHex}25`
-                        }}
-                      >
-                        <div className="flex items-center gap-0.5 mr-1 pl-0.5">
-                          <span className="block w-0.5 h-3.5 rounded-xs" style={{ backgroundColor: premierTier.colorHex }} />
-                          <span className="block w-0.5 h-3.5 rounded-xs" style={{ backgroundColor: premierTier.colorHex }} />
-                        </div>
-                        <span
-                          className="skew-x-[12deg] text-xs font-black italic tracking-wide"
-                          style={{ color: premierTier.colorHex }}
-                        >
-                          {premierRating.toLocaleString()}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-xs font-black text-gray-500 uppercase tracking-wider">
-                        UNRANKED
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. FACEIT Official Badge */}
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-[#FF5500]/30 bg-[#FF5500]/[0.04] transition-all min-w-[170px]">
-              <div className="w-10 h-10 rounded-lg bg-black/60 border border-white/[0.08] flex items-center justify-center shrink-0 p-1">
-                {hasFaceit && faceitBadge ? (
-                  <img
-                    src={faceitBadge.badgePath}
-                    alt={`FACEIT Level ${faceitBadge.label}`}
-                    className="h-full w-full object-contain drop-shadow-[0_2px_8px_rgba(255,85,0,0.3)]"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center rounded bg-[#FF5500]/10 border border-[#FF5500]/20">
-                    <FaceitLogoIcon className="w-6 h-6" />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-gray-400 tracking-wider">
-                  <FaceitLogoIcon className="w-3 h-3" />
-                  <span>FACEIT PRO</span>
-                </div>
-                <div className="text-base font-black text-white tracking-tight font-mono leading-tight mt-0.5">
-                  {hasFaceit && faceit?.elo ? (
-                    <>
-                      {faceit.elo.toLocaleString()}{" "}
-                      <span className="text-[10px] font-bold text-[#FF5500]">ELO</span>
-                    </>
-                  ) : hasFaceit && faceit?.skillLevel ? (
-                    <span className="text-xs text-orange-300 font-bold">Level {faceit.skillLevel}</span>
-                  ) : (
-                    <span className="text-[11px] text-gray-400 font-semibold tracking-wide">ID NOT FOUND</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Valve VAC / Security Status Badge */}
+          {/* Right: Telemetry Badges (Premier + FACEIT + VAC Shield) */}
+          <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3 w-full lg:w-auto">
+            {/* 1. CS2 Premier Medal Card */}
             <div
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border min-w-[170px] transition-all ${
-                !isBanned
-                  ? "border-emerald-500/30 bg-emerald-500/[0.03]"
-                  : "border-rose-500/80 bg-rose-950/60 shadow-[0_0_20px_rgba(244,63,94,0.4)]"
-              }`}
+              className="flex items-center gap-3 px-3.5 py-2 rounded-lg border transition-all min-w-[150px]"
+              style={{
+                borderColor: isPremierRanked ? (premierTier.colorHex || premierTier.hex) : "rgba(255,255,255,0.08)",
+                backgroundColor: isPremierRanked ? premierTier.bg : "rgba(255,255,255,0.02)",
+                boxShadow: isPremierRanked ? `0 0 16px ${premierTier.colorHex || premierTier.hex}33` : "none",
+              }}
             >
               <div
-                className={`w-10 h-10 rounded-lg bg-black/60 border flex items-center justify-center shrink-0 p-1 ${
-                  !isBanned ? "border-white/[0.08]" : "border-rose-500/50"
-                }`}
+                className="w-8 h-8 rounded flex items-center justify-center shrink-0 border"
+                style={{
+                  backgroundColor: isPremierRanked ? premierTier.bg : "rgba(255,255,255,0.04)",
+                  borderColor: isPremierRanked ? (premierTier.colorHex || premierTier.hex) : "rgba(255,255,255,0.1)",
+                }}
               >
-                <ValveVacShieldIcon className="w-5 h-5" isClean={!isBanned} />
+                <CS2PremierIcon
+                  className="w-4 h-4"
+                  color={isPremierRanked ? (premierTier.colorHex || premierTier.hex) : "#6B7280"}
+                />
               </div>
-
-              <div>
-                <div className={`text-[9px] uppercase font-bold tracking-wider ${!isBanned ? "text-gray-400" : "text-rose-300"}`}>
-                  VALVE SECURITY
-                </div>
-                <div
-                  className={`text-xs font-black uppercase tracking-wider leading-tight mt-0.5 ${
-                    !isBanned ? "text-emerald-400" : "text-rose-400"
-                  }`}
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">CS2 PREMIER</span>
+                <span
+                  className="text-xs font-black tracking-tight"
+                  style={{ color: isPremierRanked ? (premierTier.colorHex || premierTier.hex) : "#9CA3AF" }}
                 >
-                  {!isBanned
-                    ? "CLEAN STANDING"
-                    : isVacBanned && isGameBanned
-                    ? `${totalBans} BANS ON RECORD`
-                    : isGameBanned
-                    ? `${numGameBans} GAME BAN${numGameBans > 1 ? "S" : ""}`
-                    : `${numVacBans} VAC BAN${numVacBans > 1 ? "S" : ""}`}
-                </div>
-                {isBanned && (
-                  <div className="text-[8px] text-rose-400/90 font-mono mt-0.5">
-                    {daysSinceLastBan > 0 ? `${daysSinceLastBan}d since ban` : "INFRACTION RECORDED"}
-                  </div>
-                )}
+                  {isPremierRanked ? `${premierRating.toLocaleString()} CS` : "CALIBRATING"}
+                </span>
               </div>
             </div>
 
-          </div>
+            {/* 2. FACEIT Elo Card */}
+            <div className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-white/[0.08] bg-white/[0.02] min-w-[150px]">
+              <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 border border-orange-500/20 bg-orange-950/20">
+                <FaceitLogoIcon className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400">FACEIT ELO</span>
+                <span className="text-xs font-black text-orange-400">
+                  {hasFaceit ? `${faceit?.elo || 1000} ELO` : "NOT LINKED"}
+                </span>
+              </div>
+            </div>
 
+            {/* 3. Valve Security Card */}
+            <div className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-white/[0.08] bg-black/40 min-w-[150px]">
+              {isClean ? (
+                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+              ) : (
+                <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0" />
+              )}
+              <div className="flex flex-col">
+                <span className="text-[9px] text-gray-500 uppercase tracking-widest font-bold">VALVE SECURITY</span>
+                <span className={`text-xs font-black ${isClean ? "text-emerald-400" : "text-rose-400"}`}>
+                  {isClean ? "CLEAN STANDING" : `${numVacBans + numGameBans} BANS`}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Slide-over Modal for Steam.io Data */}
+      {/* Steam Identification Drawer */}
       {showDrawer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div className="relative w-full max-w-3xl bg-[#070c14] border border-cyan-500/30 rounded-lg shadow-[0_12px_40px_rgba(0,0,0,0.8)] font-mono text-xs overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.08] bg-white/[0.02]">
-              <div className="flex items-center gap-2 text-cyan-300 font-bold tracking-wider text-xs uppercase">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 font-mono">
+          <div className="w-full max-w-lg bg-[#070b12] border border-white/[0.12] rounded-xl shadow-[0_16px_60px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
                 <Database className="w-4 h-4 text-cyan-400" />
-                <span>Steam.io Telemetry &amp; Registry Audit</span>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Steam Identifiers &amp; Routing</h3>
               </div>
-              <div className="flex items-center gap-3">
-                <a
-                  href={steamIoUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-cyan-300 transition-colors"
-                >
-                  <span>Open on SteamID.io</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                <button
-                  onClick={() => setShowDrawer(false)}
-                  className="p-1 rounded hover:bg-white/[0.08] text-gray-400 hover:text-white transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <button onClick={() => setShowDrawer(false)} className="text-gray-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <div className={`p-2.5 rounded border ${isVacBanned ? "bg-rose-950/30 border-rose-500/40" : "bg-white/[0.02] border-white/[0.06]"}`}>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold">VAC Ban</div>
-                  <div className={`text-xs font-bold mt-0.5 ${isVacBanned ? "text-rose-400" : "text-emerald-400"}`}>
-                    {isVacBanned ? `${numVacBans} Ban(s)` : "Clean"}
+            <div className="p-5 space-y-3">
+              {rows.map((r) => (
+                <div key={r.key} className="flex items-center justify-between p-2.5 rounded bg-white/[0.02] border border-white/[0.05]">
+                  <div className="flex flex-col min-w-0 pr-3">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">{r.label}</span>
+                    <span className="text-xs text-cyan-300 font-mono truncate">{r.value}</span>
                   </div>
+                  <button
+                    onClick={() => handleCopy(r.key, r.value)}
+                    className="p-1.5 rounded bg-white/[0.05] hover:bg-white/[0.1] text-gray-300 hover:text-white transition-all shrink-0"
+                  >
+                    {copiedKey === r.key ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
-
-                <div className={`p-2.5 rounded border ${isCommunityBanned ? "bg-rose-950/30 border-rose-500/40" : "bg-white/[0.02] border-white/[0.06]"}`}>
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Community</div>
-                  <div className={`text-xs font-bold mt-0.5 ${isCommunityBanned ? "text-rose-400" : "text-emerald-400"}`}>
-                    {isCommunityBanned ? "Restricted" : "Clean"}
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Trade Ban</div>
-                  <div className={`text-xs font-bold mt-0.5 uppercase ${economyBan !== "none" ? "text-rose-400" : "text-gray-300"}`}>
-                    {economyBan}
-                  </div>
-                </div>
-
-                <div className="p-2.5 rounded bg-white/[0.02] border border-white/[0.06]">
-                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Visibility</div>
-                  <div className={`text-xs font-bold mt-0.5 ${isPublic ? "text-emerald-400" : "text-amber-400"}`}>
-                    {isPublic ? "Public" : "Private"}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded border border-white/[0.08] bg-black/40 overflow-hidden">
-                <div className="divide-y divide-white/[0.04]">
-                  {rows.map((row) => (
-                    <div
-                      key={row.key}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors gap-2"
-                    >
-                      <span className="w-48 shrink-0 text-gray-500 text-[11px]">
-                        {row.label}
-                      </span>
-
-                      <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
-                        {row.isLink && row.href ? (
-                          <a
-                            href={row.href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 truncate select-all flex items-center gap-1"
-                          >
-                            <span>{row.value}</span>
-                            <ExternalLink className="w-3 h-3 opacity-60 shrink-0" />
-                          </a>
-                        ) : (
-                          <span className="text-xs text-gray-300 truncate select-all font-mono">
-                            {row.value}
-                          </span>
-                        )}
-
-                        <button
-                          onClick={() => handleCopy(row.key, row.value)}
-                          className={`p-1 px-2 rounded border transition-all text-[10px] font-medium shrink-0 ${
-                            copiedKey === row.key
-                              ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
-                              : "bg-white/[0.03] hover:bg-white/[0.08] border-white/[0.08] text-gray-400 hover:text-white"
-                          }`}
-                        >
-                          {copiedKey === row.key ? (
-                            <span className="flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-400" /> Copied
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1">
-                              <Copy className="w-3 h-3" /> Copy
-                            </span>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
-
           </div>
         </div>
       )}

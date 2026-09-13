@@ -33,12 +33,12 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      kdRatio: doc.kdRatio ?? 1.10,
-      adr: doc.adr ?? 226.8,
-      headshotPct: doc.headshotPct ?? 50,
-      totalKills: doc.totalKills ?? 317893,
-      totalDeaths: doc.totalDeaths ?? 288911,
-      totalMatches: doc.totalMatches ?? 3
+      kdRatio: doc.kdRatio ?? 0,
+      adr: doc.adr ?? 0,
+      headshotPct: doc.headshotPct ?? 0,
+      totalKills: doc.totalKills ?? 0,
+      totalDeaths: doc.totalDeaths ?? 0,
+      totalMatches: doc.totalMatches ?? 0
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
