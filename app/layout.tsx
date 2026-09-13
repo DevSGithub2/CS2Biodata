@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CS2 BioData // Combat Telemetry System",
+  title: "CS2BioData",
   description: "Real-time competitive combat intelligence across Valve & third-party matchmaking.",
   icons: {
     icon: [
