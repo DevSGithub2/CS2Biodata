@@ -1,6 +1,7 @@
 const https = require("https");
 const { MongoClient } = require("mongodb");
 require("dotenv").config({ path: ".env.local" });
+require("dotenv").config();
 
 const uri = process.env.MONGODB_URI;
 const steamKey = process.env.STEAM_API_KEY;
