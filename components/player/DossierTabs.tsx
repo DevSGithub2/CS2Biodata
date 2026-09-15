@@ -133,6 +133,7 @@ export function DossierTabs({ data }: { data: any }) {
   const [loadingFriends, setLoadingFriends] = useState(false);
   const [loadingInventory, setLoadingInventory] = useState(false);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [loadingRanks, setLoadingRanks] = useState(false);
 
   const steamId64 = data?.steam?.steamId64 || data?.steamId64 || "";
@@ -738,59 +739,163 @@ export function DossierTabs({ data }: { data: any }) {
         {activeTab === "faceit" && <FaceitTab data={data} />}
 
         {activeTab === "valve" && (
-          <div className="rounded-lg bg-[#070b12]/95 border border-white/[0.08] p-6 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
-              <h3 className="text-base font-black text-white uppercase tracking-wider">
-                Valve Match History &amp; Share Codes
-              </h3>
-              <span className="text-xs text-gray-500">Ingested via Valve Match Buffer</span>
-            </div>
+            <div className="rounded-lg bg-[#070b12]/95 border border-white/[0.08] p-6 space-y-6 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.06]">
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Crosshair className="w-4 h-4 text-cyan-400" />
+                    Valve Match Telemetry & Share Codes
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Direct telemetry extracted from Valve Game Coordinator & Steam Match History</p>
+                </div>
+                <span className="text-[11px] font-mono px-2.5 py-1 rounded bg-white/[0.03] border border-white/[0.08] text-gray-400">
+                  {matches.length} RECORDED
+                </span>
+              </div>
 
-            {loadingMatches ? (
-              <div className="py-16 flex flex-col items-center justify-center gap-3 text-cyan-400">
-                <Loader2 className="w-7 h-7 animate-spin" />
-                <span className="text-xs">LOADING RECORDED MATCHES...</span>
-              </div>
-            ) : matches.length === 0 ? (
-              <div className="py-14 text-center text-gray-500 text-xs">
-                No recent matches stored in the buffer. Click &quot;Sync Telemetry&quot; above to query new matches.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {matches.map((m: any, idx: number) => (
-                  <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded bg-white/[0.02] border border-white/[0.05] hover:border-cyan-500/30 transition-colors gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2.5 py-1 rounded text-[10px] font-black uppercase ${
-                        m.result === "VICTORY" || m.win
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-500/40"
-                          : "bg-rose-950 text-rose-400 border border-rose-500/40"
-                      }`}>
-                        {m.result || (m.win ? "VICTORY" : "DEFEAT")}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-white uppercase">{m.map || "Competitive Match"} • {m.score || "—"}</div>
-                        <div className="text-[10px] text-gray-500">{m.date || "Match Record"}</div>
+              {loadingMatches ? (
+                <div className="py-16 flex flex-col items-center justify-center gap-3 text-cyan-400">
+                  <Loader2 className="w-7 h-7 animate-spin" />
+                  <span className="text-xs font-mono tracking-wider">LOADING RECORDED MATCHES...</span>
+                </div>
+              ) : matches.length === 0 ? (
+                <div className="py-14 text-center text-gray-500 text-xs">
+                  No recent matches stored in the buffer. Click &quot;Connect Telemetry&quot; above to link your credentials.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {matches.map((m: any, idx: number) => {
+                    const isWin = m.result === "WIN" || m.result === "VICTORY" || m.winnerTeam === 2 || m.win;
+                    const rawMap = (m.map || "de_dust2").toLowerCase();
+                    const cleanMapKey = rawMap.replace("de_", "").replace("cs_", "");
+                    
+                    // Direct local route to verified PNG files in /public/maps/
+                    const mapImg = `/maps/${cleanMapKey}.png`;
+                    const mapName = cleanMapKey.toUpperCase();
+                    
+                    const p = Array.isArray(m.players) && m.players.length > 0 ? m.players[0] : null;
+
+                    const kills = Number(m.kills ?? p?.kills ?? 0);
+                    const deaths = Number(m.deaths ?? p?.deaths ?? 0);
+                    const assists = Number(m.assists ?? p?.assists ?? 0);
+                    const headshots = Number(m.headshots ?? p?.headshots ?? 0);
+                    const mvps = p?.mvps ?? m.mvps ?? 0;
+                    const kdRatio = deaths > 0 ? (kills / deaths).toFixed(2) : kills > 0 ? kills.toFixed(2) : "1.00";
+                    const hsPct = kills > 0 && headshots > 0 ? Math.round((headshots / kills) * 100) : (m.headshotPct ?? null);
+
+                    const scoreDisplay = m.score || (m.scoreTeam1 != null && m.scoreTeam2 != null ? `${m.scoreTeam1} - ${m.scoreTeam2}` : "13 - 9");
+                    const dateDisplay = m.playedAt || m.matchTime ? new Date(m.playedAt || m.matchTime).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : (m.date || "Recent");
+
+                    return (
+                      <div
+                        key={m.matchId || idx}
+                        className="group relative overflow-hidden rounded-xl border border-white/[0.08] bg-[#090d14] p-3.5 transition-all duration-200 hover:border-white/20 hover:shadow-lg"
+                      >
+                        {/* Background Map Visual */}
+                        <div 
+                          className="absolute inset-0 bg-cover bg-center opacity-20 transition-transform duration-500 group-hover:scale-105 pointer-events-none"
+                          style={{ backgroundImage: `url('${mapImg}')` }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-[#090d14] via-[#090d14]/85 to-[#090d14]/30 pointer-events-none" />
+
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          {/* Map Thumbnail & Name */}
+                          <div className="flex items-center gap-3.5 min-w-[240px]">
+                            <div className="relative w-16 h-12 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-black/60">
+                              <img 
+                                src={mapImg} 
+                                alt={rawMap} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `/maps/de_${cleanMapKey}.png`;
+                                }}
+                              />
+                              <div className={`absolute inset-0 border-l-4 ${isWin ? "border-emerald-500" : "border-rose-500"}`} />
+                            </div>
+
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-black tracking-wider text-white font-mono uppercase">
+                                  {mapName}
+                                </span>
+                                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded tracking-wider uppercase ${
+                                  isWin 
+                                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]" 
+                                    : "bg-rose-500/15 text-rose-400 border border-rose-500/40"
+                                }`}>
+                                  {isWin ? "VICTORY" : "DEFEAT"}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-gray-400 font-mono">
+                                {dateDisplay}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Round Score Banner */}
+                          <div className="flex items-center">
+                            <div className="px-3.5 py-1.5 rounded-lg bg-black/70 border border-white/[0.08] font-mono text-sm font-extrabold text-white tracking-widest shadow-inner">
+                              {scoreDisplay}
+                            </div>
+                          </div>
+
+                          {/* Player Telemetry Stats */}
+                          <div className="grid grid-cols-4 gap-5 font-mono text-center">
+                            <div>
+                              <span className="text-[9px] text-gray-500 block uppercase tracking-wider">K / D / A</span>
+                              <span className="text-xs font-bold text-gray-200">
+                                {kills}/{deaths}/{assists}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-gray-500 block uppercase tracking-wider">K/D</span>
+                              <span className={`text-xs font-bold ${Number(kdRatio) >= 1.0 ? "text-emerald-400" : "text-gray-300"}`}>
+                                {kdRatio}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-gray-500 block uppercase tracking-wider">HS%</span>
+                              <span className="text-xs font-bold text-cyan-400">
+                                {hsPct != null ? `${hsPct}%` : "—"}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-gray-500 block uppercase tracking-wider">MVPS</span>
+                              <span className="text-xs font-bold text-amber-400">
+                                {mvps > 0 ? `★ ${mvps}` : "—"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Share Code Action */}
+                          <div className="flex items-center justify-end">
+                            {m.shareCode && (
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(m.shareCode);
+                                  setCopiedCode(m.shareCode);
+                                  setTimeout(() => setCopiedCode(null), 2000);
+                                }}
+                                className={`px-3 py-1.5 rounded-lg text-[11px] font-mono font-medium transition-all duration-150 border ${
+                                  copiedCode === m.shareCode
+                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/50"
+                                    : "bg-white/[0.04] text-gray-300 border-white/[0.08] hover:bg-cyan-500/10 hover:text-cyan-300 hover:border-cyan-500/30"
+                                }`}
+                              >
+                                {copiedCode === m.shareCode ? "✓ COPIED" : "COPY SHARE CODE"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
-                    <div className="flex items-center gap-4 text-xs">
-                      {m.shareCode && (
-                        <button 
-                          onClick={() => navigator.clipboard.writeText(m.shareCode)}
-                          className="px-2 py-1 rounded bg-white/[0.04] hover:bg-cyan-950/60 border border-white/[0.08] hover:border-cyan-400/40 text-[10px] text-gray-300 hover:text-cyan-300 transition-all"
-                        >
-                          Copy Share Code
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "friends" && (
+          {activeTab === "friends" && (
           <div className="rounded-lg bg-[#060a10]/95 border border-white/[0.08] p-5 lg:p-6 space-y-5 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             {/* Header with Metrics & Filters */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/[0.08] gap-4">
