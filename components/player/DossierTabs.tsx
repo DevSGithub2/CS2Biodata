@@ -1,4 +1,6 @@
 "use client";
+
+import { Inspect3DModal } from "@/components/player/Inspect3DModal";
 import Link from "next/link";
 import { FaceitTab } from "@/components/player/FaceitTab";
 import { SkillGroupsTab } from "@/components/player/SkillGroupsTab";
@@ -118,6 +120,7 @@ export function DossierTabs({ data }: { data: any }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [rarityFilter, setRarityFilter] = useState("all");
   const [statTrakOnly, setStatTrakOnly] = useState(false);
+  const [is3DModalOpen, setIs3DModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
   const [friendFilter, setFriendFilter] = useState<"all" | "banned" | "clean">("all");
@@ -599,17 +602,25 @@ export function DossierTabs({ data }: { data: any }) {
                             </div>
                           </div>
 
-                          <div className="pt-2">
-                            <a
-                              href={`https://steamcommunity.com/market/listings/730/${encodeURIComponent(selectedItem.name)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full flex items-center justify-center gap-1.5 py-2.5 px-3 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] hover:border-cyan-400 text-xs font-bold text-gray-200 hover:text-white transition-all active:scale-98"
-                            >
-                              <span>Inspect on Steam Market</span>
-                              <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
-                            </a>
-                          </div>
+                          <div className="pt-2 flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setIs3DModalOpen(true)}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/40 hover:border-cyan-400 text-xs font-bold text-cyan-300 hover:text-cyan-200 transition-all shadow-[0_0_12px_rgba(6,182,212,0.15)] active:scale-98 cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>3D VIEW</span>
+                              </button>
+                              <a
+                                href={`https://steamcommunity.com/market/listings/730/${encodeURIComponent(selectedItem.name)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] hover:border-white/25 text-xs font-bold text-gray-200 hover:text-white transition-all active:scale-98 text-center"
+                              >
+                                <span>Steam Market</span>
+                                <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                              </a>
+                            </div>
                         </div>
                       );
                     })()
@@ -1060,6 +1071,15 @@ export function DossierTabs({ data }: { data: any }) {
           </div>
         )}
       </div>
+      {/* 3D Realtime Item Inspect Modal */}
+      <Inspect3DModal
+        item={selectedItem ? {
+          ...selectedItem,
+          icon: selectedItem.icon || selectedItem.icon_url || selectedItem.image || (selectedItem.icon_url_large ? "https://community.cloudflare.steamstatic.com/economy/image/" + selectedItem.icon_url_large : "")
+        } : null}
+        isOpen={is3DModalOpen}
+        onClose={() => setIs3DModalOpen(false)}
+      />
     </div>
   );
 }

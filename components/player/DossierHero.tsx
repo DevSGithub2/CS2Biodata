@@ -211,11 +211,11 @@ export function DossierHero({ data }: { data: any }) {
               </div>
 
               {createdDate && (
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-500 leading-none pl-0.5">
-                  <Calendar className="w-3 h-3 text-gray-500" />
-                  <span>Member since {createdDate}</span>
-                </div>
-              )}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.06] border border-white/[0.12] text-xs font-mono text-zinc-200 shadow-sm w-fit mt-0.5">
+                    <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Member since <strong className="font-bold text-white tracking-wide">{createdDate}</strong></span>
+                  </div>
+                )}
             </div>
           </div>
 
