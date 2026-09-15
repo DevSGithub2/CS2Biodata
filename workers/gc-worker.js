@@ -1,3 +1,5 @@
+require("dotenv").config({ path: ".env.local" });
+require("dotenv").config();
 const { MongoClient } = require("mongodb");
 const SteamUser = require("steam-user");
 const GlobalOffensive = require("globaloffensive");
