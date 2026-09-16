@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { getOfficialFaceitBadge, getPremierTier } from "@/lib/cs2-assets";
+import { getSteamLevelStyle } from "@/lib/utils/steamLevel";
 import { ExternalLink, Calendar, Database, X, Copy, Check, ShieldCheck, ShieldAlert, Award } from "lucide-react";
 import { SteamTelemetryCard } from "@/components/player/SteamTelemetryCard";
 import { steamIdToCsFriendCode } from "@/lib/steamFriendCode";
@@ -123,6 +124,33 @@ export function DossierHero({ data }: { data: any }) {
   const isGameBanned = bans?.numberOfGameBans > 0;
   const isCleanStanding = !isVacBanned && !isCommunityBanned && !isGameBanned;
 
+  
+  const rawFaceitElo = Number(data?.faceit?.elo ?? data?.player?.faceit?.elo ?? 0);
+  const rawFaceitLevel = data?.faceit?.skill_level ?? data?.faceit?.level ?? data?.player?.faceit?.skill_level ?? data?.player?.faceit?.level;
+  
+  const resolvedFaceitLevel = rawFaceitLevel 
+    ? Number(rawFaceitLevel) 
+    : (rawFaceitElo >= 2001 ? 10 :
+       rawFaceitElo >= 1851 ? 9 :
+       rawFaceitElo >= 1701 ? 8 :
+       rawFaceitElo >= 1531 ? 7 :
+       rawFaceitElo >= 1351 ? 6 :
+       rawFaceitElo >= 1201 ? 5 :
+       rawFaceitElo >= 1051 ? 4 :
+       rawFaceitElo >= 901 ? 3 :
+       rawFaceitElo >= 801 ? 2 :
+       rawFaceitElo > 0 ? 1 : null);
+
+  const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFaceitLevel) : null;
+
+
+
+  const steamLevelTier = getSteamLevelStyle(Number(steamLevel || 0));
+  const accountAgeYears = timeCreated
+    ? Math.max(0, Math.floor((Date.now() - Number(timeCreated) * 1000) / (1000 * 60 * 60 * 24 * 365.25)))
+    : null;
+
+
   return (
     <>
       <div className="relative rounded-2xl bg-[#040810]/95 border border-white/[0.08] p-4 sm:p-6 shadow-2xl backdrop-blur-xl overflow-hidden">
@@ -151,35 +179,39 @@ export function DossierHero({ data }: { data: any }) {
               />
             </div>
 
-            {/* Aligned Details Column */}
-            <div className="flex flex-col justify-center gap-2 min-w-0">
-              {/* Row 1: Name & Tier Badges */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight truncate max-w-[240px] sm:max-w-[280px]">
+            {/* Persona, Badges & Actions */}
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">
                   {personaName}
                 </h1>
+                <span
+                  style={{
+                    borderColor: steamLevelTier.border?.replace("border-", "") || undefined,
+                    color: steamLevelTier.text?.replace("text-", "") || undefined,
+                    boxShadow: steamLevelTier.glow,
+                  }}
+                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-mono font-bold bg-[#070b10] ${steamLevelTier.border} ${steamLevelTier.text}`}
+                >
+                  <span className="text-[9px] font-black opacity-60 uppercase">LVL</span>
+                  {steamLevel ?? 0}
+                </span>
 
-                {steamLevel !== null && (
-                  <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border ${levelStyle.border} ${levelStyle.bg} ${levelStyle.glow}`}>
-                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-wider">LVL</span>
-                    <span className={`text-xs font-black ${levelStyle.text}`}>{steamLevel}</span>
-                  </div>
-                )}
-
-                {yearsOld !== null && yearsOld >= 0 && (
-                  <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
-                    <span className="text-[10px] font-bold">★ {yearsOld} YRS</span>
-                  </div>
+                {accountAgeYears !== null && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-mono font-bold shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                    <span className="text-amber-400">★</span> {accountAgeYears} YRS
+                  </span>
                 )}
               </div>
 
-              {/* Row 2: Action Buttons */}
+              {/* Original Buttons */}
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
                   onClick={() => setShowDrawer(true)}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/[0.08] hover:bg-cyan-500/[0.16] border border-cyan-500/30 hover:border-cyan-400 text-[11px] text-cyan-300 hover:text-white font-semibold transition-all active:scale-95 shadow-[0_0_10px_rgba(6,182,212,0.1)] cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono font-semibold transition-all shadow-[0_0_10px_rgba(6,182,212,0.15)]"
                 >
-                  <Database className="w-3 h-3 text-cyan-400" />
+                  <Database className="w-3.5 h-3.5" />
                   <span>Steam.io Data</span>
                 </button>
 
@@ -187,14 +219,14 @@ export function DossierHero({ data }: { data: any }) {
                   href={profileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] hover:border-white/25 text-[11px] text-gray-300 hover:text-white font-medium transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-zinc-300 hover:text-white text-xs font-mono font-semibold transition-all"
                 >
                   <span>Steam Profile</span>
-                  <ExternalLink className="w-3 h-3 text-gray-400" />
+                  <ExternalLink className="w-3 h-3 opacity-70" />
                 </a>
               </div>
 
-              {/* Row 3: Account Creation Date */}
+              {/* Member since Badge */}
               {createdDate && (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.06] border border-white/[0.12] text-xs font-mono text-zinc-200 shadow-sm w-fit">
                   <Calendar className="w-3.5 h-3.5 text-cyan-400" />
@@ -203,6 +235,10 @@ export function DossierHero({ data }: { data: any }) {
               )}
             </div>
           </div>
+
+          
+
+          
 
           {/* Section 2: Middle - Dynamic Steam Telemetry Grid Template */}
           <div className="shrink-0 w-full xl:w-auto">
@@ -253,8 +289,16 @@ export function DossierHero({ data }: { data: any }) {
 
             {/* FACEIT Elo Badge */}
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] min-w-[140px]">
-              <div className="p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                <FaceitLogoIcon className="w-5 h-5" />
+              <div className="p-1 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center min-w-[36px] min-h-[36px]">
+                {resolvedFaceitLevel ? (
+                  <img
+                    src={`/faceit/faceit${resolvedFaceitLevel}.svg`}
+                    alt={`FACEIT Level ${resolvedFaceitLevel}`}
+                    className="w-7 h-7 object-contain drop-shadow-[0_0_10px_rgba(255,100,0,0.4)]"
+                  />
+                ) : (
+                  <FaceitLogoIcon className="w-5 h-5" />
+                )}
               </div>
               <div className="flex flex-col font-mono">
                 <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">FACEIT ELO</span>

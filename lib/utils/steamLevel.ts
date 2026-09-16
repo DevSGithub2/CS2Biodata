@@ -1,32 +1,81 @@
 export interface SteamLevelStyle {
-  color: string;
-  borderColor: string;
-  textColor: string;
+  border: string;
+  text: string;
   glow: string;
 }
 
-export function getSteamLevelStyle(level: number = 0): SteamLevelStyle {
-  const tier = Math.floor((Math.max(0, level) % 100) / 10);
+export function getSteamLevelStyle(level: number): SteamLevelStyle {
+  const lvl = Math.floor(Math.max(0, level) / 10) * 10;
 
-  const palette: Record<number, { color: string; glow: string }> = {
-    0: { color: "#9b9b9b", glow: "rgba(155, 155, 155, 0.4)" }, // 0-9   Grey
-    1: { color: "#c02942", glow: "rgba(192, 41, 66, 0.45)" },  // 10-19 Red
-    2: { color: "#d95b26", glow: "rgba(217, 91, 38, 0.45)" },  // 20-29 Orange
-    3: { color: "#e4af12", glow: "rgba(228, 175, 18, 0.45)" }, // 30-39 Yellow
-    4: { color: "#438244", glow: "rgba(67, 130, 68, 0.45)" },  // 40-49 Green
-    5: { color: "#3a80e8", glow: "rgba(58, 128, 232, 0.5)" },  // 50-59 Blue
-    6: { color: "#8a43b6", glow: "rgba(138, 67, 182, 0.5)" },  // 60-69 Purple
-    7: { color: "#d846b4", glow: "rgba(216, 70, 180, 0.5)" },  // 70-79 Pink
-    8: { color: "#702737", glow: "rgba(112, 39, 55, 0.5)" },   // 80-89 Dark Crimson
-    9: { color: "#8b5e34", glow: "rgba(139, 94, 52, 0.45)" },  // 90-99 Bronze
-  };
-
-  const current = palette[tier] || palette[0];
-
-  return {
-    color: current.color,
-    borderColor: current.color,
-    textColor: current.color,
-    glow: `0 0 12px ${current.glow}`,
-  };
+  switch (lvl) {
+    case 0:
+      return {
+        border: "border-zinc-500/40",
+        text: "text-zinc-300",
+        glow: "0 0 10px rgba(161,161,170,0.25)",
+      };
+    case 10:
+      return {
+        border: "border-red-500/50",
+        text: "text-red-400",
+        glow: "0 0 12px rgba(239,68,68,0.35)",
+      };
+    case 20:
+      return {
+        border: "border-amber-500/50",
+        text: "text-amber-400",
+        glow: "0 0 12px rgba(245,158,11,0.35)",
+      };
+    case 30:
+      return {
+        border: "border-yellow-500/50",
+        text: "text-yellow-400",
+        glow: "0 0 12px rgba(234,179,8,0.35)",
+      };
+    case 40:
+      return {
+        border: "border-emerald-500/50",
+        text: "text-emerald-400",
+        glow: "0 0 12px rgba(16,185,129,0.35)",
+      };
+    case 50:
+      return {
+        border: "border-cyan-500/50",
+        text: "text-cyan-400",
+        glow: "0 0 12px rgba(6,182,212,0.35)",
+      };
+    case 60:
+      return {
+        border: "border-blue-500/50",
+        text: "text-blue-400",
+        glow: "0 0 12px rgba(59,130,246,0.35)",
+      };
+    case 70:
+      return {
+        border: "border-purple-500/50",
+        text: "text-purple-400",
+        glow: "0 0 12px rgba(168,85,247,0.35)",
+      };
+    case 80:
+      return {
+        border: "border-pink-500/50",
+        text: "text-pink-400",
+        glow: "0 0 12px rgba(236,72,153,0.35)",
+      };
+    case 90:
+      return {
+        border: "border-orange-500/50",
+        text: "text-orange-400",
+        glow: "0 0 12px rgba(249,115,22,0.35)",
+      };
+    default:
+      return {
+        border: "border-fuchsia-500/60",
+        text: "text-fuchsia-400",
+        glow: "0 0 15px rgba(217,70,239,0.45)",
+      };
+  }
 }
+
+// Alias to ensure both naming conventions resolve
+export const getSteamLevelTier = getSteamLevelStyle;
