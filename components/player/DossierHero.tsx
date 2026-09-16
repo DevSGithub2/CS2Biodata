@@ -161,20 +161,41 @@ const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFace
           {/* Section 1: Left - Player Avatar & Personal Metadata */}
           <div className="flex items-center gap-4 sm:gap-5">
             {/* Avatar with Status Indicator */}
-            <div className="relative shrink-0">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-white/[0.12] bg-[#0c1322] shadow-lg">
-                {avatar ? (
-                  <img src={avatar} alt={personaName} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center font-mono font-bold text-gray-500">CS2</div>
-                )}
+            <div className="flex flex-col items-center shrink-0">
+              <div className="relative">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-white/[0.12] bg-[#0c1322] shadow-lg">
+                  {avatar ? (
+                    <img src={avatar} alt={personaName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center font-mono font-bold text-gray-500">CS2</div>
+                  )}
+                </div>
+                <span
+                  className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#040810] ${
+                    isOnline ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-zinc-600"
+                  }`}
+                  title={isOnline ? "Online" : "Offline"}
+                />
               </div>
-              <span
-                className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-[#040810] ${
-                  isOnline ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" : "bg-zinc-600"
-                }`}
-                title={isOnline ? "Online" : "Offline"}
-              />
+
+              {/* Tactical Save Settings / Cloud Backup Button */}
+              <a
+                href="https://indiepaste.online"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 px-2 py-1 rounded bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 text-[10px] font-mono tracking-wider transition-all duration-200 shadow-[0_0_10px_rgba(6,182,212,0.15)] group"
+                title="Save settings & configs to IndiePaste"
+              >
+                <svg
+                  className="w-3 h-3 text-cyan-400 group-hover:rotate-12 transition-transform duration-200"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                <span className="font-semibold uppercase tracking-wider">SAVE SETTINGS</span>
+              </a>
             </div>
 
             {/* Persona, Badges & Actions */}
