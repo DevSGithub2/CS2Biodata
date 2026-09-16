@@ -36,7 +36,6 @@ client.on("loggedOn", () => {
   client.gamesPlayed([730]);
 });
 
-// Scan and accept any pending friend requests
 function sweepPendingInvites() {
   if (!client.myFriends) return;
   console.log("[GC Worker] Scanning friends cache for pending invites...");
@@ -50,71 +49,30 @@ function sweepPendingInvites() {
   }
 }
 
-// steam-user populates client.myFriends on friendsList
 client.on("friendsList", () => {
   console.log("[GC Worker] Friends list cached.");
   sweepPendingInvites();
 });
 
-// Real-time friend relationship changes
-client.on("friendRelationship", async (steamID, relationship) => {
-  const sid64 = typeof steamID.getSteamID64 === "function" ? steamID.getSteamID64() : steamID.toString();
-
-  // 2 = RequestRecipient (incoming invite)
-  if (relationship === SteamUser.EFriendRelationship.RequestRecipient || relationship === 2) {
-    console.log(`🤝 [GC Worker] Incoming friend invite detected from: ${sid64}. Accepting...`);
-    client.addFriend(steamID, (err) => {
-      if (err) console.error(`[GC Worker] Add friend error for ${sid64}:`, err.message);
-    });
-  }
-
-  // 3 = Friend (established friendship)
-  if (relationship === SteamUser.EFriendRelationship.Friend || relationship === 3) {
-    console.log(`✅ [GC Worker] Friendship active with ${sid64}. Fetching GC telemetry...`);
-
-    if (csgo.haveGCSession) {
-      try {
-        const accountId = typeof steamID.accountid !== "undefined" 
-          ? steamID.accountid 
-          : (BigInt(sid64) - 76561197960265728n).toString();
-          
-        if (csgo._send) {
-          // k_EMsgGCCStrike15_v2_ClientRequestPlayersProfile = 9127
-          csgo._send(9127, { account_id: Number(accountId), request_level: 32 });
-        } else if (typeof csgo.requestPlayersProfile === "function") {
-          csgo.requestPlayersProfile(steamID);
-        }
-      } catch (err) {
-        console.error(`[GC Worker] Failed to dispatch GC profile request for ${sid64}:`, err.message);
-      }
-    }
-
-    // Unfriend after 6 seconds to keep friend slots completely clear
-    setTimeout(() => {
-      client.removeFriend(steamID);
-      console.log(`🧹 [GC Worker] Auto-unfriended ${sid64} after profile telemetry sync.`);
-    }, 6000);
-  }
-});
-
-
-csgo.on("playersProfile", async (profile) => {
-  if (!profile || !profile.account_id) return;
-  const accountId = Number(profile.account_id);
-  const steamId64 = (BigInt(accountId) + 76561197960265728n).toString();
-  console.log(`[GC Worker] Received live GC profile for ${steamId64}`);
-
+async function handleProfileData(steamId64, profile) {
+  if (!profile) return;
   try {
     const rankings = profile.rankings || [];
-    const premierEntry = rankings.find(r => r.rank_type_id === 6 || r.rank_type_id === 2 || r.score > 0) || profile.ranking;
+    const premierEntry = rankings.find((r) => r.rank_type_id === 6 || r.rank_type_id === 2 || r.score > 0) || profile.ranking;
     const score = Number(premierEntry?.score ?? premierEntry?.rank_id ?? 0);
 
-    console.log(`[GC Worker] Extracted Premier Score: ${score}`);
+    console.log(`[GC Worker] Extracted Premier Score: ${score} for ${steamId64}`);
 
     if (db && score > 0) {
-      // Save to both dossiers and player_ranks collections
       await db.collection("dossiers").updateMany(
-        { $or: [{ steamId64 }, { steamId: steamId64 }, { "steam.identifiers.steamID64": steamId64 }] },
+        {
+          $or: [
+            { steamId64 },
+            { steamId: steamId64 },
+            { "identifiers.steamID64": steamId64 },
+            { "steam.identifiers.steamID64": steamId64 }
+          ]
+        },
         {
           $set: {
             premierRating: score,
@@ -122,28 +80,75 @@ csgo.on("playersProfile", async (profile) => {
             "premier.rating": score,
             "premier.score": score,
             "premier.activeSeason.rating": score,
+            rankings: rankings,
             updatedAt: new Date()
           }
         }
       );
+
       await db.collection("player_ranks").updateOne(
         { $or: [{ steamId64 }, { steamId: steamId64 }] },
         {
           $set: {
             steamId: steamId64,
-            steamId64: steamId64,
+            steamId64,
             premierRating: score,
             score: score,
             rankings: rankings,
+            premier: {
+              activeSeason: { rating: score, wins: premierEntry?.wins || 0 },
+              seasons: []
+            },
             updatedAt: new Date()
           }
         },
         { upsert: true }
       );
-      console.log(`💾 [GC Worker] Successfully saved Premier rating (${score}) to dossiers & player_ranks for ${steamId64}`); (${score}) to DB for ${steamId64}`);
+
+      console.log(`💾 [GC Worker] Successfully saved Premier rating (${score}) to dossiers & player_ranks for ${steamId64}`);
     }
   } catch (err) {
-    console.error("[GC Worker] Failed to persist profile telemetry:", err.message);
+    console.error(`[GC Worker] Failed saving profile data for ${steamId64}:`, err.message);
+  }
+}
+
+// Event-based profile telemetry listener
+csgo.on("playersProfile", (profile) => {
+  if (!profile || !profile.account_id) return;
+  const steamId64 = (BigInt(profile.account_id) + 76561197960265728n).toString();
+  console.log(`[GC Worker] Event playersProfile received for ${steamId64}`);
+  handleProfileData(steamId64, profile);
+});
+
+// Real-time friend relationship handler
+client.on("friendRelationship", async (steamID, relationship) => {
+  const sid64 = typeof steamID.getSteamID64 === "function" ? steamID.getSteamID64() : steamID.toString();
+
+  if (relationship === SteamUser.EFriendRelationship.RequestRecipient || relationship === 2) {
+    console.log(`🤝 [GC Worker] Incoming friend invite detected from: ${sid64}. Accepting...`);
+    client.addFriend(steamID, (err) => {
+      if (err) console.error(`[GC Worker] Add friend error for ${sid64}:`, err.message);
+    });
+  }
+
+  if (relationship === SteamUser.EFriendRelationship.Friend || relationship === 3) {
+    console.log(`✅ [GC Worker] Friendship active with ${sid64}. Requesting CS2 profile...`);
+
+    if (csgo.haveGCSession) {
+      try {
+        csgo.requestPlayersProfile(sid64, (profile) => {
+          console.log(`[GC Worker] Callback playersProfile received for ${sid64}`);
+          handleProfileData(sid64, profile);
+        });
+      } catch (err) {
+        console.error(`[GC Worker] Failed to dispatch GC profile request for ${sid64}:`, err.message);
+      }
+    }
+
+    setTimeout(() => {
+      client.removeFriend(steamID);
+      console.log(`🧹 [GC Worker] Auto-unfriended ${sid64} after profile telemetry sync.`);
+    }, 8000);
   }
 });
 
