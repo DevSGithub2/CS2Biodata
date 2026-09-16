@@ -104,7 +104,7 @@ async function fetchAndStorePlayerProfile(steamID) {
       setTimeout(() => {
         client.removeFriend(steamID);
         console.log(`🧹 Auto-unfriended ${steamId64} after profile telemetry sync.`);
-      }, 8000);
+      }, 5000);
     } else {
       csgo.requestPlayersProfile(steamID);
     }
@@ -214,7 +214,7 @@ async function fetchAndStorePlayerProfile(steamID) {
     setTimeout(() => {
       csgo.removeListener("playersProfile", onProfileResponse);
       client.removeFriend(steamID);
-    }, 8000);
+    }, 5000);
 
   } catch (ex) {
     console.error(`Exception during profile fetch for ${steamId64}:`, ex);
