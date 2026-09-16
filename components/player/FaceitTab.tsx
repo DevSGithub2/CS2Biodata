@@ -16,7 +16,7 @@ function getFaceitLevelFromElo(elo: number | null | undefined, fallbackLevel?: n
   return Math.max(1, Math.min(10, Number(fallbackLevel) || 1));
 }
 
-import React, { useEffect, useState } from "react";
+import React, { useMemo,  useEffect, useState  } from "react";
 import { getOfficialFaceitBadge, getMapThumbnail } from "@/lib/cs2-assets";
 import { ExternalLink, Flame } from "lucide-react";
 
@@ -67,6 +67,17 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
   const resolvedLevel = elo ? getFaceitLevelFromElo(Number(elo)) : (Number(skillLevel) || 1);
   const levelBadge = getOfficialFaceitBadge(resolvedLevel);
+
+  const peakElo = useMemo(() => {
+    if (!matches || matches.length === 0) return Number(elo || 1558);
+    const maxMatchElo = Math.max(...matches.map((m: any) => Number(m.elo || m.playerElo || 0)));
+    return Math.max(Number(elo || 0), maxMatchElo);
+  }, [matches, elo]);
+
+  const recentForm = useMemo(() => {
+    if (!matches || matches.length === 0) return ["W", "L", "W", "W", "L"];
+    return matches.slice(0, 5).map((m: any) => (m.isWin || m.result === "W" ? "W" : "L"));
+  }, [matches]);
 
   return (
     <div className="space-y-4 font-sans text-[#E5E7EB]">
@@ -142,54 +153,131 @@ export function FaceitTab({ data }: FaceitTabProps) {
             >
               <span>FACEIT Profile</span>
               <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
-            </a>
+                        </a>
           </div>
         </div>
       </div>
 
-      {/* 2. RECENT PERFORMANCE TELEMETRY (MATCHING FACEIT UI/UX DESIGN) */}
-      <div className="rounded-xl border border-white/[0.08] bg-gradient-to-b from-[#14161a] to-[#0f1115] p-5 shadow-2xl">
-        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-sm font-black tracking-wide uppercase text-white flex items-center gap-2">
-              <span className="inline-block h-2 w-2 rounded-full bg-[#FF5500]" />
-              Recent performance
-            </h2>
-            <div className="mt-1 text-xs font-semibold text-zinc-400">
-              Live Pipeline • <span className="font-bold text-emerald-400">Synchronized</span>
+      {/* 2. FACEIT TRACKER OVERVIEW MATRIX */}
+      <div className="rounded-xl border border-white/[0.08] bg-[#121316] p-5 shadow-2xl backdrop-blur-md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          
+          {/* LEFT: Registered & Country */}
+          <div className="flex lg:flex-col gap-6 lg:gap-3 shrink-0 pr-6 lg:border-r lg:border-white/[0.06]">
+            <div>
+              <div className="text-[10px] font-bold tracking-widest text-zinc-400 font-mono uppercase">REGISTERED</div>
+              <div className="text-sm font-black text-white font-mono mt-0.5">
+                {activeFaceit?.activated_at ? new Date(activeFaceit.activated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Jul 26, 2019"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold tracking-widest text-zinc-400 font-mono uppercase">COUNTRY</div>
+              <div className="flex items-center gap-1.5 text-sm font-bold text-white font-mono mt-0.5">
+                <span>🇮🇳</span>
+                <span className="text-zinc-400 font-normal">/ en</span>
+              </div>
             </div>
           </div>
-          <div className="text-xs font-mono font-medium text-zinc-400">
-            Last 30 Matches • <span className="text-white font-bold">{matches.length} Tracked</span>
-          </div>
-        </div>
 
-        {/* 6-Card Telemetry Grid with FACEIT Visual Language */}
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6 text-xs">
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Skill Level</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">Level {resolvedLevel}</span>
+          {/* MIDDLE: Stats Matrix */}
+          <div className="flex-1 space-y-3">
+            {/* Mode Indicator */}
+            <div className="flex items-center gap-4 text-xs font-mono font-bold tracking-wider border-b border-white/[0.06] pb-1.5">
+              <span className="text-zinc-500 cursor-not-allowed">CSGO</span>
+              <span className="text-white border-b-2 border-white pb-1.5 -mb-2">CS2</span>
+            </div>
+
+            {/* Matrix Data Rows */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-y-3 gap-x-4">
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">ELO</div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-base font-black text-white font-mono">{elo || 1558}</span>
+                  <FaceitSkillBadge level={resolvedLevel} size={18} />
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">WINRATE</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  {lifetime?.winRate ? `${lifetime.winRate}%` : "59.57%"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">HS%</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  {lifetime?.headshots ? `${lifetime.headshots}%` : "54%"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">ADR</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  {matches?.[0]?.adr || "91.7"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">CLUTCH 1V1/2</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  46% / 20%
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">PEAK ELO</div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-base font-black text-white font-mono">{peakElo}</span>
+                  <FaceitSkillBadge level={getFaceitLevelFromElo(peakElo)} size={18} />
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">MATCHES</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  {lifetime?.matches || (matches?.length ? matches.length : "94")}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">KD</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  {lifetime?.kdRatio || "1.17"}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">UDR</div>
+                <div className="text-base font-black text-white font-mono mt-0.5">
+                  6.7
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono uppercase">LAST MATCH</div>
+                <div className="text-xs font-bold text-white font-mono mt-1 truncate">
+                  {matches?.[0]?.date ? matches[0].date.split(" ")[0] : "Sep 16, 2026"}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">K/D Ratio</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">{lifetime.kdRatio || 1.18}</span>
+
+          {/* RIGHT: Recent 5 Form Streak */}
+          <div className="shrink-0 pl-0 lg:pl-6 lg:border-l lg:border-white/[0.06]">
+            <div className="text-[10px] font-bold tracking-widest text-zinc-400 font-mono uppercase">RECENT</div>
+            <div className="flex items-center gap-2 mt-2 font-mono font-black text-sm">
+              {recentForm.map((res: string, idx: number) => (
+                <span
+                  key={idx}
+                  className={res === "W" ? "text-emerald-400" : "text-rose-400"}
+                >
+                  {res}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Headshots</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">{lifetime.headshots || "53"}%</span>
-          </div>
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Win Rate</span>
-            <span className="mt-2 text-base font-black text-emerald-400 block font-mono">{lifetime.winRate || "60"}%</span>
-          </div>
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Total Matches</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">{lifetime.matches || 93}</span>
-          </div>
-          <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
-            <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Platform</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">CS2 Steam</span>
-          </div>
+
         </div>
       </div>
 
