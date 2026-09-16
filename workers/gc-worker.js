@@ -20,9 +20,8 @@ const csgo = new GlobalOffensive(client);
 let mongoClient;
 let db;
 
-
 client.on("error", (err) => {
-  console.error("[GC Worker] Steam logon error:", err.message);
+  console.error("[GC Worker] Steam error:", err.message);
 });
 
 client.on("steamGuard", (domain, callback) => {
@@ -37,8 +36,70 @@ client.on("loggedOn", () => {
   client.gamesPlayed([730]);
 });
 
+// Scan and accept any pending friend requests
+function sweepPendingInvites() {
+  if (!client.myFriends) return;
+  console.log("[GC Worker] Scanning friends cache for pending invites...");
+  for (const [sid, relationship] of Object.entries(client.myFriends)) {
+    if (relationship === SteamUser.EFriendRelationship.RequestRecipient || relationship === 2) {
+      console.log(`🤝 [GC Worker] Auto-accepting backlogged invite from: ${sid}`);
+      client.addFriend(sid, (err) => {
+        if (err) console.error(`[GC Worker] Failed to accept ${sid}:`, err.message);
+      });
+    }
+  }
+}
+
+// steam-user populates client.myFriends on friendsList
+client.on("friendsList", () => {
+  console.log("[GC Worker] Friends list cached.");
+  sweepPendingInvites();
+});
+
+// Real-time friend relationship changes
+client.on("friendRelationship", async (steamID, relationship) => {
+  const sid64 = typeof steamID.getSteamID64 === "function" ? steamID.getSteamID64() : steamID.toString();
+
+  // 2 = RequestRecipient (incoming invite)
+  if (relationship === SteamUser.EFriendRelationship.RequestRecipient || relationship === 2) {
+    console.log(`🤝 [GC Worker] Incoming friend invite detected from: ${sid64}. Accepting...`);
+    client.addFriend(steamID, (err) => {
+      if (err) console.error(`[GC Worker] Add friend error for ${sid64}:`, err.message);
+    });
+  }
+
+  // 3 = Friend (established friendship)
+  if (relationship === SteamUser.EFriendRelationship.Friend || relationship === 3) {
+    console.log(`✅ [GC Worker] Friendship active with ${sid64}. Fetching GC telemetry...`);
+
+    if (csgo.haveGCSession) {
+      try {
+        const accountId = typeof steamID.accountid !== "undefined" 
+          ? steamID.accountid 
+          : (BigInt(sid64) - 76561197960265728n).toString();
+          
+        if (csgo._send) {
+          // k_EMsgGCCStrike15_v2_ClientRequestPlayersProfile = 9127
+          csgo._send(9127, { account_id: Number(accountId), request_level: 32 });
+        } else if (typeof csgo.requestPlayersProfile === "function") {
+          csgo.requestPlayersProfile(steamID);
+        }
+      } catch (err) {
+        console.error(`[GC Worker] Failed to dispatch GC profile request for ${sid64}:`, err.message);
+      }
+    }
+
+    // Unfriend after 6 seconds to keep friend slots completely clear
+    setTimeout(() => {
+      client.removeFriend(steamID);
+      console.log(`🧹 [GC Worker] Auto-unfriended ${sid64} after profile telemetry sync.`);
+    }, 6000);
+  }
+});
+
 csgo.on("connectedToGC", async () => {
   console.log("[GC Worker] Connected to CS2 Game Coordinator!");
+  sweepPendingInvites();
   try {
     mongoClient = new MongoClient(uri);
     await mongoClient.connect();
@@ -54,7 +115,6 @@ async function pollUnprocessedMatches() {
     try {
       if (!db || !csgo.haveGCSession) return;
 
-      // Find matches where scoreboard telemetry has not been extracted yet
       const matchToInspect = await db.collection("valvematches").findOne({
         demoUrl: { $exists: false }
       });
@@ -62,11 +122,8 @@ async function pollUnprocessedMatches() {
       if (!matchToInspect) return;
 
       console.log(`[GC Worker] Inspecting share code: ${matchToInspect.shareCode}`);
-      
       const decoded = decodeMatchShareCode(matchToInspect.shareCode);
-      
       csgo.requestGame(decoded.matchId, decoded.outcomeId || decoded.reservationId, decoded.tvPort || decoded.token);
-
     } catch (err) {
       console.error("[GC Worker] Error in match queue polling:", err.message);
     }
@@ -79,9 +136,6 @@ csgo.on("matchList", async (matches) => {
   console.log(`[GC Worker] Match telemetry received for Match ID: ${match.matchid}`);
 
   try {
-    const roundScores = match.roundstatsall || [];
-    const lastRound = roundScores[roundScores.length - 1];
-
     await db.collection("valvematches").updateOne(
       { matchId: { $regex: match.matchid.toString() } },
       {
