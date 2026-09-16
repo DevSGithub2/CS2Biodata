@@ -1,3 +1,4 @@
+import { getPlayerExtraSteamTelemetry } from "@/lib/services/steam";
 import { NextResponse } from "next/server";
 import { resolveToSteamId64, fetchSteamProfileAndBans, fetchFriendNetworkAudit } from "@/lib/services/steam";
 import { fetchFaceitStats } from "@/lib/services/faceit";
@@ -27,8 +28,8 @@ export async function GET(request: Request) {
       client = await clientPromise;
       db = client.db("cs2biodata");
       const cached = await db.collection("players").findOne({
-        steamId64,
-        updatedAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
+          steamId64,
+          updatedAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }
       });
       if (cached && (cached as any).steamLevel !== undefined && (cached as any).steamLevel > 0) {
         return NextResponse.json({
@@ -85,12 +86,31 @@ export async function GET(request: Request) {
     // 4. Price inventory items
     const pricedInventory = await enrichInventoryWithPrices(steamId64, rawInventory.items);
 
+    
+    const steamApiKey = process.env.STEAM_API_KEY || "";
+    let extraTelemetry = { playtimeHours: null, friendsCount: null };
+    try {
+      if (steamId64 && steamApiKey) {
+        extraTelemetry = await getPlayerExtraSteamTelemetry(steamId64, steamApiKey);
+      }
+    } catch (e) {
+      console.error("[Audit Telemetry Fetch Error]:", e);
+    }
+
+    
+
     const auditPayload = {
       steamId64,
+      friendsCount: extraTelemetry?.friendsCount ?? (friendAudit?.totalFriends || null),
+      playtimeTotalHours: extraTelemetry?.playtimeHours ?? null,
       steamLevel: liveLevel,
       level: liveLevel,
       yearsOld,
-      steam: steamProfile,
+      steam: {
+        ...steamProfile,
+        friendsCount: extraTelemetry?.friendsCount ?? (friendAudit?.totalFriends || null),
+        playtimeTotalHours: extraTelemetry?.playtimeHours ?? null
+      },
       faceit: faceitData,
       network: friendAudit,
       inventory: {

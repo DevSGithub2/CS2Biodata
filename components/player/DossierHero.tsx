@@ -204,8 +204,22 @@ export function DossierHero({ data }: { data: any }) {
               steamLevel={steamLevel}
               xpLevel={resolvedXpLevel}
               timeCreated={timeCreated}
-              friendsCount={data?.friendsCount ?? steam?.friendsCount ?? data?.player?.friendsCount ?? (Array.isArray(data?.friends) ? data.friends.length : null)}
-              playtimeTotalHours={data?.playtimeTotalHours ?? steam?.playtimeTotalHours ?? data?.player?.playtimeTotalHours ?? data?.cs2PlaytimeHours ?? steam?.cs2PlaytimeHours ?? null}
+              friendsCount={
+    data?.friendsCount ??
+    data?.player?.friendsCount ??
+    data?.steam?.friendsCount ??
+    steam?.friendsCount ??
+    (Array.isArray(data?.friends) ? data.friends.length : null)
+  }
+              playtimeTotalHours={
+    data?.playtimeTotalHours ??
+    data?.player?.playtimeTotalHours ??
+    data?.steam?.playtimeTotalHours ??
+    steam?.playtimeTotalHours ??
+    data?.playtimeHours ??
+    data?.player?.playtimeHours ??
+    (data?.stats?.playtime ? Math.round(Number(data.stats.playtime)) : null)
+  }
               playtimeRecentHours={data?.cs2RecentHours || steam?.cs2RecentHours}
               commendations={normalizedCommendations}
               country={country || steam?.loccountrycode || data?.loccountrycode}
