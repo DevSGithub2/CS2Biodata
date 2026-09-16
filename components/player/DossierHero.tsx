@@ -83,7 +83,16 @@ export function DossierHero({ data }: { data: any }) {
   const isOnline = personaState > 0;
 
   // Premier State
-  const premierRating = Number(premier?.activeSeason?.rating || premier?.rating || data?.premierRating || 0);
+  const premierRating = Number(
+    premier?.activeSeason?.rating ??
+    premier?.rating ??
+    premier?.score ??
+    data?.premierRating ??
+    data?.premier_rank ??
+    data?.player?.premier_rank ??
+    (Array.isArray(data?.rankings) ? data.rankings.find(r => r.rank_type_id === 6 || r.rank_type_id === 2)?.score : 0) ??
+    0
+  );
   
   // Resolved Telemetry metrics
   const calculatedFriendsCount = (() => {

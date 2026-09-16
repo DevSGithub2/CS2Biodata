@@ -97,6 +97,56 @@ client.on("friendRelationship", async (steamID, relationship) => {
   }
 });
 
+
+csgo.on("playersProfile", async (profile) => {
+  if (!profile || !profile.account_id) return;
+  const accountId = Number(profile.account_id);
+  const steamId64 = (BigInt(accountId) + 76561197960265728n).toString();
+  console.log(`[GC Worker] Received live GC profile for ${steamId64}`);
+
+  try {
+    const rankings = profile.rankings || [];
+    const premierEntry = rankings.find(r => r.rank_type_id === 6 || r.rank_type_id === 2 || r.score > 0) || profile.ranking;
+    const score = Number(premierEntry?.score ?? premierEntry?.rank_id ?? 0);
+
+    console.log(`[GC Worker] Extracted Premier Score: ${score}`);
+
+    if (db && score > 0) {
+      // Save to both dossiers and player_ranks collections
+      await db.collection("dossiers").updateMany(
+        { $or: [{ steamId64 }, { steamId: steamId64 }, { "steam.identifiers.steamID64": steamId64 }] },
+        {
+          $set: {
+            premierRating: score,
+            premier_rank: score,
+            "premier.rating": score,
+            "premier.score": score,
+            "premier.activeSeason.rating": score,
+            updatedAt: new Date()
+          }
+        }
+      );
+      await db.collection("player_ranks").updateOne(
+        { $or: [{ steamId64 }, { steamId: steamId64 }] },
+        {
+          $set: {
+            steamId: steamId64,
+            steamId64: steamId64,
+            premierRating: score,
+            score: score,
+            rankings: rankings,
+            updatedAt: new Date()
+          }
+        },
+        { upsert: true }
+      );
+      console.log(`💾 [GC Worker] Successfully saved Premier rating (${score}) to dossiers & player_ranks for ${steamId64}`); (${score}) to DB for ${steamId64}`);
+    }
+  } catch (err) {
+    console.error("[GC Worker] Failed to persist profile telemetry:", err.message);
+  }
+});
+
 csgo.on("connectedToGC", async () => {
   console.log("[GC Worker] Connected to CS2 Game Coordinator!");
   sweepPendingInvites();

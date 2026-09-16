@@ -20,7 +20,29 @@ export async function GET(req: NextRequest) {
     await client.connect();
     const db = client.db("cs2biodata");
 
-    const record = await db.collection("player_ranks").findOne({ steamId64 });
+    let record = await db.collection("player_ranks").findOne({ 
+      $or: [{ steamId64 }, { steamId: steamId64 }] 
+    });
+
+    if (!record || !record.premier?.activeSeason?.rating) {
+      const dossier = await db.collection("dossiers").findOne({
+        $or: [
+          { steamId64 },
+          { steamId: steamId64 },
+          { "identifiers.steamID64": steamId64 },
+          { "steam.identifiers.steamID64": steamId64 }
+        ]
+      });
+      if (dossier && (dossier.premier || dossier.premierRating || dossier.premier_rank)) {
+        const rating = Number(dossier.premier?.rating ?? dossier.premier?.score ?? dossier.premierRating ?? dossier.premier_rank ?? 0);
+        record = {
+          steamId64,
+          premier: { activeSeason: { rating, wins: dossier.premier?.activeSeason?.wins || 0 }, seasons: [] },
+          premierRating: rating,
+          rankings: dossier.rankings || []
+        };
+      }
+    }
     await client.close();
 
     if (!record) {
