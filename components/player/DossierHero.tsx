@@ -35,13 +35,20 @@ function FaceitLogoIcon({ className = "w-4 h-4" }: { className?: string }) {
 }
 
 function getSteamLevelTier(lvl: number) {
-  if (lvl >= 100) return { border: "border-purple-500", text: "text-purple-300", bg: "bg-purple-950/50", glow: "shadow-[0_0_12px_rgba(168,85,247,0.35)]" };
-  if (lvl >= 50) return { border: "border-yellow-500", text: "text-yellow-300", bg: "bg-yellow-950/50", glow: "shadow-[0_0_12px_rgba(234,179,8,0.35)]" };
-  if (lvl >= 40) return { border: "border-blue-500", text: "text-blue-300", bg: "bg-blue-950/50", glow: "shadow-[0_0_12px_rgba(59,130,246,0.35)]" };
-  if (lvl >= 30) return { border: "border-emerald-500", text: "text-emerald-300", bg: "bg-emerald-950/50", glow: "shadow-[0_0_12px_rgba(16,185,129,0.35)]" };
-  if (lvl >= 20) return { border: "border-orange-500", text: "text-orange-300", bg: "bg-orange-950/50", glow: "shadow-[0_0_12px_rgba(249,115,22,0.35)]" };
-  if (lvl >= 10) return { border: "border-rose-500", text: "text-rose-300", bg: "bg-rose-950/50", glow: "shadow-[0_0_12px_rgba(244,63,94,0.35)]" };
-  return { border: "border-zinc-500", text: "text-zinc-300", bg: "bg-zinc-800/50", glow: "shadow-[0_0_12px_rgba(113,113,122,0.2)]" };
+  const tier = Math.floor((Math.max(0, lvl) % 100) / 10);
+  const styles: Record<number, { border: string; text: string; bg: string; glow: string }> = {
+    0: { border: "border-zinc-400/70", text: "text-zinc-300", bg: "bg-zinc-800/40", glow: "shadow-[0_0_10px_rgba(155,155,155,0.3)]" },
+    1: { border: "border-red-500/80", text: "text-red-400", bg: "bg-red-950/40", glow: "shadow-[0_0_10px_rgba(192,41,66,0.35)]" },
+    2: { border: "border-orange-500/80", text: "text-orange-400", bg: "bg-orange-950/40", glow: "shadow-[0_0_10px_rgba(217,91,38,0.35)]" },
+    3: { border: "border-yellow-500/80", text: "text-yellow-400", bg: "bg-yellow-950/40", glow: "shadow-[0_0_10px_rgba(228,175,18,0.35)]" },
+    4: { border: "border-emerald-500/80", text: "text-emerald-400", bg: "bg-emerald-950/40", glow: "shadow-[0_0_10px_rgba(67,130,68,0.35)]" },
+    5: { border: "border-sky-500/80", text: "text-sky-400", bg: "bg-sky-950/40", glow: "shadow-[0_0_10px_rgba(58,128,232,0.4)]" },
+    6: { border: "border-purple-500/80", text: "text-purple-400", bg: "bg-purple-950/40", glow: "shadow-[0_0_10px_rgba(138,67,182,0.4)]" },
+    7: { border: "border-pink-500/80", text: "text-pink-400", bg: "bg-pink-950/40", glow: "shadow-[0_0_10px_rgba(216,70,180,0.4)]" },
+    8: { border: "border-rose-700/80", text: "text-rose-400", bg: "bg-rose-950/40", glow: "shadow-[0_0_10px_rgba(112,39,55,0.4)]" },
+    9: { border: "border-amber-700/80", text: "text-amber-500", bg: "bg-amber-950/40", glow: "shadow-[0_0_10px_rgba(139,94,52,0.35)]" },
+  };
+  return styles[tier] || styles[0];
 }
 
 export function DossierHero({ data }: { data: any }) {
