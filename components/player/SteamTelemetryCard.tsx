@@ -61,14 +61,14 @@ export function SteamTelemetryCard({
       Number(commendations.teacher) > 0);
 
   return (
-    <div className="w-full max-w-[370px] rounded-xl bg-[#080d17]/90 border border-white/[0.08] p-3.5 font-mono shadow-xl backdrop-blur-md">
+    <div className="relative bg-[#070b10]/90 border border-cyan-500/20 rounded-xl p-4 shadow-[0_4px_24px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all hover:border-cyan-500/40 w-full max-w-[340px]">
       {/* Header: Steam Logo & Level Circle */}
       <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-white/80 fill-current" viewBox="0 0 24 24">
             <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10 10 10 0 0 1-9.9-8.6l4.6-1.9a3.5 3.5 0 0 0 3.3 2.3 3.5 3.5 0 0 0 3.5-3.5 3.5 3.5 0 0 0-3.5-3.5c-.7 0-1.3.2-1.8.6L6 5.8A10 10 0 0 1 12 2zm-3.8 11.5a2.1 2.1 0 1 1-2.1-2.1c.3 0 .6.1.9.2l1.6-2.3a3.5 3.5 0 0 0-.4-.1 3.5 3.5 0 0 0-3.5 3.5 3.5 3.5 0 0 0 3.5 3.5c.6 0 1.2-.2 1.7-.5l-.8-2.2h-.9z" />
           </svg>
-          <span className="text-[11px] font-black tracking-widest text-white uppercase">STEAM®</span>
+          <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase font-mono">PROFILE INFO</span>
         </div>
 
         {steamLevel !== null && steamLevel !== undefined && (

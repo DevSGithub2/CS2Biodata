@@ -129,7 +129,7 @@ export function DossierHero({ data }: { data: any }) {
         {/* Ambient background glow */}
         <div className="absolute top-0 right-1/4 w-96 h-32 bg-cyan-500/[0.04] blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-start gap-8 lg:gap-10 gap-6">
           {/* Section 1: Left - Player Avatar & Personal Metadata */}
           <div className="flex items-center gap-4 sm:gap-5">
             {/* Avatar with Status Indicator */}
@@ -285,7 +285,7 @@ export function DossierHero({ data }: { data: any }) {
       {showDrawer && (
         <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm">
           <div className="w-full max-w-xl h-full bg-[#070b14] border-l border-white/[0.1] p-6 flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+            <div className="flex items-center justify-start gap-8 lg:gap-10 pb-4 border-b border-white/[0.08]">
               <div className="flex items-center gap-2 text-cyan-400 font-mono font-bold text-sm">
                 <Database className="w-4 h-4" />
                 <span>RAW VALVE TELEMETRY PAYLOAD</span>
