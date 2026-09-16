@@ -135,11 +135,9 @@ export function DossierHero({ data }: { data: any }) {
 
   
   const rawFaceitElo = Number(data?.faceit?.elo ?? data?.player?.faceit?.elo ?? 0);
-  const rawFaceitElo > 0 
-    ? getFaceitLevelFromElo(rawFaceitElo)
-    : (rawFaceitLevel ? Number(rawFaceitLevel) : null);
-
-  const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFaceitLevel) : null;
+  const rawFaceitLevel = data?.faceit?.skill_level ?? data?.faceit?.level ?? data?.player?.faceit?.skill_level ?? data?.player?.faceit?.level;
+  const resolvedFaceitLevel = rawFaceitElo > 0 ? getFaceitLevelFromElo(rawFaceitElo) : (rawFaceitLevel ? Number(rawFaceitLevel) : null);
+const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFaceitLevel) : null;
 
 
 
