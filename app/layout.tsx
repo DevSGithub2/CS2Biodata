@@ -18,23 +18,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://cs2biotdata.me"),
   title: "CS2BioData",
   icons: {
-    icon: [
-      { url: "/icon.svg?v=2", type: "image/svg+xml" },
-      { url: "/favicon.svg?v=2", type: "image/svg+xml" }
-    ],
-    shortcut: "/icon.svg?v=2",
-    apple: "/icon.svg?v=2",
+    icon: "/icon.svg?v=3",
+    shortcut: "/icon.svg?v=3",
+    apple: "/icon.svg?v=3",
   },
-      { url: "/favicon.ico" }
-    ],
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-  },
-  description: "Real-time Counter-Strike 2 telemetry, Premier ratings, FACEIT rankings, and match intelligence dossiers.",
-  verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "m9i4vFkTV-PPg7DqXeW5UUlCPft27_nZjCGHvIS1apI",
-  },
-};
+  };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
