@@ -44,8 +44,28 @@ export function getPremierTier(rating: number | null | undefined) {
   return { name: "Grey", hex: "#b0c3d9", colorHex: "#b0c3d9", bg: "rgba(176,195,217,0.12)", border: "rgba(176,195,217,0.4)", badgePath: "/ranks/premier/medal.svg" };
 }
 
-export function getOfficialFaceitBadge(level: number | string | null | undefined) {
-  const lvl = Math.max(1, Math.min(10, Number(level) || 1));
+export function getFaceitLevelFromElo(elo: number | null | undefined): number {
+  const e = Number(elo || 0);
+  if (e >= 2001) return 10;
+  if (e >= 1751) return 9;
+  if (e >= 1531) return 8;
+  if (e >= 1351) return 7;
+  if (e >= 1201) return 6;
+  if (e >= 1051) return 5;
+  if (e >= 901) return 4;
+  if (e >= 751) return 3;
+  if (e >= 501) return 2;
+  return 1;
+}
+
+export function getOfficialFaceitBadge(level: number | string | null | undefined, elo?: number | null | undefined) {
+  let lvl = Number(level || 0);
+  if (elo && Number(elo) > 0) {
+    lvl = getFaceitLevelFromElo(Number(elo));
+  } else if (lvl > 10) {
+    lvl = getFaceitLevelFromElo(lvl);
+  }
+  lvl = Math.max(1, Math.min(10, lvl || 1));
   return {
     level: lvl,
     name: `Level ${lvl}`,

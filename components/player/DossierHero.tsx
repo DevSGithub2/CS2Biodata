@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { getOfficialFaceitBadge, getPremierTier } from "@/lib/cs2-assets";
+import { getOfficialFaceitBadge, getFaceitLevelFromElo, getPremierTier } from "@/lib/cs2-assets";
 import { getSteamLevelStyle } from "@/lib/utils/steamLevel";
 import { ExternalLink, Calendar, Database, X, Copy, Check, ShieldCheck, ShieldAlert, Award } from "lucide-react";
 import { SteamTelemetryCard } from "@/components/player/SteamTelemetryCard";
@@ -135,20 +135,9 @@ export function DossierHero({ data }: { data: any }) {
 
   
   const rawFaceitElo = Number(data?.faceit?.elo ?? data?.player?.faceit?.elo ?? 0);
-  const rawFaceitLevel = data?.faceit?.skill_level ?? data?.faceit?.level ?? data?.player?.faceit?.skill_level ?? data?.player?.faceit?.level;
-  
-  const resolvedFaceitLevel = rawFaceitLevel 
-    ? Number(rawFaceitLevel) 
-    : (rawFaceitElo >= 2001 ? 10 :
-       rawFaceitElo >= 1851 ? 9 :
-       rawFaceitElo >= 1701 ? 8 :
-       rawFaceitElo >= 1531 ? 7 :
-       rawFaceitElo >= 1351 ? 6 :
-       rawFaceitElo >= 1201 ? 5 :
-       rawFaceitElo >= 1051 ? 4 :
-       rawFaceitElo >= 901 ? 3 :
-       rawFaceitElo >= 801 ? 2 :
-       rawFaceitElo > 0 ? 1 : null);
+  const rawFaceitElo > 0 
+    ? getFaceitLevelFromElo(rawFaceitElo)
+    : (rawFaceitLevel ? Number(rawFaceitLevel) : null);
 
   const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFaceitLevel) : null;
 
