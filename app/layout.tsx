@@ -19,7 +19,12 @@ export const metadata: Metadata = {
   title: "CS2BioData",
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg?v=2", type: "image/svg+xml" },
+      { url: "/favicon.svg?v=2", type: "image/svg+xml" }
+    ],
+    shortcut: "/icon.svg?v=2",
+    apple: "/icon.svg?v=2",
+  },
       { url: "/favicon.ico" }
     ],
     shortcut: "/favicon.svg",
