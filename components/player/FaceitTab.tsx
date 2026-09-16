@@ -79,7 +79,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
             <div className="relative">
               <img src={avatar} alt={nickname} className="h-16 w-16 rounded-xl object-cover border-2 border-white/10 shadow-lg" />
               <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#1e2025] border border-white/15">
-                <img src={levelBadge.badgePath} alt={`Level ${skillLevel}`} className="w-5 h-5 object-contain inline-block shrink-0" />
+                <FaceitSkillBadge level={resolvedLevel} size={22} />
               </div>
             </div>
 
@@ -96,7 +96,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
               <div className="mt-2 flex items-center gap-3">
                 <span className="text-2xl font-black tracking-tight text-white font-mono">{elo != null && !isNaN(Number(elo)) ? `${Number(elo).toLocaleString()} ELO` : "UNRANKED"}</span>
                 <span className="rounded border border-[#FF5500]/30 bg-[#FF5500]/10 px-2 py-0.5 text-[10px] font-extrabold tracking-wider text-[#FF5500] uppercase">
-                  Level {skillLevel}
+                  Level {resolvedLevel}
                 </span>
               </div>
             </div>
@@ -168,7 +168,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6 text-xs">
           <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
             <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">Skill Level</span>
-            <span className="mt-2 text-base font-black text-white block font-mono">Level {skillLevel}</span>
+            <span className="mt-2 text-base font-black text-white block font-mono">Level {resolvedLevel}</span>
           </div>
           <div className="rounded-xl border border-white/[0.07] bg-black/50 p-4 transition-all hover:border-[#FF5500]/40">
             <span className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 block">K/D Ratio</span>
@@ -214,8 +214,9 @@ export function FaceitTab({ data }: FaceitTabProps) {
           ) : (
             matches.map((m: any) => {
               const matchEloNum = Number(m.elo ?? m.playerElo ?? 0);
-              const rowLvl = matchEloNum > 0 ? getFaceitLevelFromElo(matchEloNum) : (Number(m.skillLevel || m.skill_level || skillLevel) || 1);
-                const lvlBadge = getOfficialFaceitBadge(rowLvl);
+              const rowElo = Number(m.elo || m.playerElo || m.eloAfter || 0);
+              const rowLvl = rowElo > 0 ? getFaceitLevelFromElo(rowElo) : (Number(m.skillLevel || m.skill_level || skillLevel) || 1);
+              const lvlBadge = getOfficialFaceitBadge(rowLvl);
               const mapThumb = getMapThumbnail(m.map);
               const roomUrl = m.id && m.id.length > 5 
                 ? `https://www.faceit.com/en/cs2/room/${m.id}` 
@@ -244,7 +245,7 @@ export function FaceitTab({ data }: FaceitTabProps) {
 
                   {/* Level Badge & Elo */}
                   <div className="col-span-2 flex items-center gap-2.5">
-                    <FaceitSkillBadge level={m.level || m.skillLevel || skillLevel} size={22} />
+                    <FaceitSkillBadge level={rowLvl} size={22} />
                     <div className="flex items-center gap-1 font-mono">
                       <span className="font-black text-white">{m.elo}</span>
                       <span className={`text-[10px] font-bold ${m.eloChange > 0 ? "text-emerald-400" : "text-rose-400"}`}>

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { getOfficialFaceitBadge, getFaceitLevelFromElo, getPremierTier } from "@/lib/cs2-assets";
+import { FaceitSkillBadge } from "@/components/ui/FaceitSkillBadge";
 import { getSteamLevelStyle } from "@/lib/utils/steamLevel";
 import { ExternalLink, Calendar, Database, X, Copy, Check, ShieldCheck, ShieldAlert, Award } from "lucide-react";
 import { SteamTelemetryCard } from "@/components/player/SteamTelemetryCard";
