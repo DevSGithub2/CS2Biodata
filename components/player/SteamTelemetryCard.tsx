@@ -1,7 +1,8 @@
 "use client";
 
+import { getSteamLevelStyle } from "@/lib/utils/steamLevel";
 import React, { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import {  Check, Copy , Globe } from "lucide-react";
 
 interface SteamTelemetryCardProps {
   steamId64?: string;
@@ -34,6 +35,7 @@ export function SteamTelemetryCard({
   commendations,
   country,
 }: SteamTelemetryCardProps) {
+  const levelStyle = getSteamLevelStyle(Number(steamLevel || 0));
   const [copied, setCopied] = useState(false);
 
   const registeredDate = timeCreated
@@ -70,7 +72,7 @@ export function SteamTelemetryCard({
         </div>
 
         {steamLevel !== null && steamLevel !== undefined && (
-          <div className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full border border-cyan-400/80 bg-cyan-500/10 text-cyan-300 text-[11px] font-black shadow-[0_0_8px_rgba(6,182,212,0.25)]">
+          <div style={{ borderColor: levelStyle.borderColor, color: levelStyle.textColor, boxShadow: levelStyle.glow, backgroundColor: `${levelStyle.color}15` }} className="flex items-center justify-center min-w-6 h-6 px-1.5 rounded-full border text-[11px] font-black font-mono">
             {steamLevel}
           </div>
         )}
@@ -144,20 +146,25 @@ export function SteamTelemetryCard({
           )}
         </div>
 
-        <div className="pt-1.5 border-t border-white/[0.04]">
+        <div>
           <span className="text-[8.5px] uppercase tracking-wider text-zinc-500 font-bold block mb-0.5">COUNTRY</span>
-          {country ? (
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 mt-0.5">
+            {country && country.toUpperCase() !== "GLOBAL" && country.toUpperCase() !== "WW" && country.length === 2 ? (
               <img
                 src={`https://flagcdn.com/20x15/${country.toLowerCase()}.png`}
-                alt={country.toUpperCase()}
-                className="w-3.5 h-2.5 object-cover rounded-[1px]"
+                alt={country}
+                className="w-4 h-3 object-cover rounded-[1px]"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = "none";
+                }}
               />
-              <span className="text-[10px] font-bold text-zinc-300 uppercase">{country}</span>
-            </div>
-          ) : (
-            <span className="text-[10px] text-zinc-500">—</span>
-          )}
+            ) : (
+              <Globe className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            )}
+            <span className="text-[12px] font-bold text-zinc-200 tracking-tight font-mono">
+              {country || "GLOBAL"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
