@@ -129,7 +129,9 @@ export function DossierHero({ data }: { data: any }) {
         {/* Ambient background glow */}
         <div className="absolute top-0 right-1/4 w-96 h-32 bg-cyan-500/[0.04] blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-start gap-8 lg:gap-10 gap-6">
+        <div className="relative z-10 flex flex-col xl:flex-row items-center justify-between gap-6 w-full">
+        {/* Left Cluster: Player Avatar & Identity + Profile Info Card */}
+        <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8 w-full xl:w-auto">
           {/* Section 1: Left - Player Avatar & Personal Metadata */}
           <div className="flex items-center gap-4 sm:gap-5">
             {/* Avatar with Status Indicator */}
@@ -232,9 +234,10 @@ export function DossierHero({ data }: { data: any }) {
               country={country || steam?.loccountrycode || data?.loccountrycode}
             />
           </div>
+          </div>
 
           {/* Section 3: Right - Competitive Ranks & Security Standing */}
-          <div className="flex flex-wrap items-center justify-start xl:justify-end gap-3 w-full xl:w-auto">
+          <div className="flex flex-wrap items-center justify-start xl:justify-end gap-3 w-full xl:w-auto xl:ml-auto shrink-0">
             {/* Premier Rating Badge */}
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] min-w-[140px]">
               <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
