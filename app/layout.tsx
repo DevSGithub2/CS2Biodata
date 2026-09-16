@@ -18,9 +18,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://cs2biotdata.me"),
   title: "CS2BioData",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
   description: "Real-time Counter-Strike 2 telemetry, Premier ratings, FACEIT rankings, and match intelligence dossiers.",
   verification: {
