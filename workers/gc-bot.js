@@ -48,7 +48,19 @@ client.on("loggedOn", () => {
   client.gamesPlayed([730]);
 });
 
+
+function sweepPendingInvites() {
+  if (!client.myFriends) return;
+  for (const [sid, relationship] of Object.entries(client.myFriends)) {
+    if (relationship === SteamUser.EFriendRelationship.RequestRecipient || relationship === 2) {
+      console.log(`🤝 Processing backlogged invite from ${sid}...`);
+      client.addFriend(sid);
+    }
+  }
+}
+
 csgo.on("connectedToGC", () => {
+  sweepPendingInvites();
   console.log("🎯 Connected to CS2 Game Coordinator!");
   setInterval(processPendingMatches, 15000);
   processPendingMatches();
@@ -88,6 +100,11 @@ async function fetchAndStorePlayerProfile(steamID) {
     // k_EMsgGCCStrike15_v2_ClientRequestPlayersProfile = 9127
     if (csgo._send) {
       csgo._send(9127, payload);
+      // Auto-remove friend after 8 seconds to allow GC response and keep slots open
+      setTimeout(() => {
+        client.removeFriend(steamID);
+        console.log(`🧹 Auto-unfriended ${steamId64} after profile telemetry sync.`);
+      }, 8000);
     } else {
       csgo.requestPlayersProfile(steamID);
     }
