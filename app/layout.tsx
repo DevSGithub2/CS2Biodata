@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cs2biodata.me"),
+  metadataBase: new URL("https://cs2biotdata.me"),
   title: {
     default: "CS2BioData | Advanced CS2 & FACEIT Dossier Intelligence",
     template: "%s | CS2BioData",
