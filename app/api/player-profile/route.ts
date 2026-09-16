@@ -1,3 +1,4 @@
+import { getPlayerExtraSteamTelemetry } from "@/lib/services/steam";
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
@@ -8,7 +9,11 @@ export async function GET(req: NextRequest) {
   const rawId = searchParams.get("steamId") || searchParams.get("steamId64");
 
   if (!rawId) {
-    return NextResponse.json({ error: "steamId is required" }, { status: 400 });
+    return NextResponse.json({
+      friendsCount: extraTelemetry?.friendsCount ?? null,
+      playtimeTotalHours: extraTelemetry?.playtimeHours ?? extraTelemetry?.playtimeTotalHours ?? null
+      error: "steamId is required" }, { status: 400
+    });
   }
 
   const STEAM_API_KEY = process.env.STEAM_API_KEY;
@@ -87,6 +92,7 @@ export async function GET(req: NextRequest) {
     const db = client.db("cs2biodata");
 
     // 6. Structure Dynamic Player Document
+    const extraTelemetry = await getPlayerExtraSteamTelemetry(resolvedSteamId64, STEAM_API_KEY);
     const playerData = {
       steamId64: resolvedSteamId64,
       personaName: player.personaname,
@@ -113,6 +119,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      friendsCount: extraTelemetry?.friendsCount ?? null,
+      playtimeTotalHours: extraTelemetry?.playtimeHours ?? extraTelemetry?.playtimeTotalHours ?? null
       player: playerData,
       steam: playerData,
       steamLevel,

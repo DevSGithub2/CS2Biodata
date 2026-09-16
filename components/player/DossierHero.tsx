@@ -76,6 +76,24 @@ export function DossierHero({ data }: { data: any }) {
 
   // Premier State
   const premierRating = Number(premier?.activeSeason?.rating || premier?.rating || data?.premierRating || 0);
+  
+  // Resolved Telemetry metrics
+  const calculatedFriendsCount = (() => {
+    if (typeof steam?.friendsCount === "number" && steam.friendsCount >= 0) return steam.friendsCount;
+    if (typeof data?.friendsCount === "number" && data.friendsCount >= 0) return data.friendsCount;
+    if (Array.isArray(data?.friends)) return data.friends.length;
+    if (Array.isArray(steam?.friends)) return steam.friends.length;
+    return null;
+  })();
+
+  const calculatedPlaytime = (() => {
+    const pt = steam?.playtimeTotalHours ?? data?.playtimeTotalHours ?? data?.stats?.playtime ?? steam?.cs2Playtime;
+    if (pt) {
+      return typeof pt === "number" ? `${Math.round(pt)} hrs` : (pt.includes("hrs") ? pt : `${pt} hrs`);
+    }
+    return null;
+  })();
+
   const isPremierRanked = premierRating > 0;
 
   const rawCommends = data?.commendations || steam?.commendations || data?.gc?.commendations || {};
@@ -186,8 +204,8 @@ export function DossierHero({ data }: { data: any }) {
               steamLevel={steamLevel}
               xpLevel={resolvedXpLevel}
               timeCreated={timeCreated}
-              friendsCount={data?.friendsCount ?? steam?.friendsCount}
-              playtimeTotalHours={data?.cs2PlaytimeHours || steam?.cs2PlaytimeHours}
+              friendsCount={data?.friendsCount ?? steam?.friendsCount ?? data?.player?.friendsCount ?? (Array.isArray(data?.friends) ? data.friends.length : null)}
+              playtimeTotalHours={data?.playtimeTotalHours ?? steam?.playtimeTotalHours ?? data?.player?.playtimeTotalHours ?? data?.cs2PlaytimeHours ?? steam?.cs2PlaytimeHours ?? null}
               playtimeRecentHours={data?.cs2RecentHours || steam?.cs2RecentHours}
               commendations={normalizedCommendations}
               country={country || steam?.loccountrycode || data?.loccountrycode}

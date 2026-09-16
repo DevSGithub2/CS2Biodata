@@ -155,3 +155,59 @@ export async function fetchFriendNetworkAudit(steamId64: string) {
     return { totalFriends: 0, bannedFriendsCount: 0, friends: [], privateNetwork: true };
   }
 }
+
+
+export async function getPlayerExtraSteamTelemetry(steamId64: string, apiKey: string) {
+  try {
+    const [gamesRes, friendsRes] = await Promise.all([
+      fetch(
+        `https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?key=${apiKey}&steamid=${steamId64}&include_played_free_games=1&format=json`,
+        { next: { revalidate: 1800 } }
+      ).catch(() => null),
+      fetch(
+        `https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=${apiKey}&steamid=${steamId64}&relationship=friend`,
+        { next: { revalidate: 1800 } }
+      ).catch(() => null)
+    ]);
+
+    let playtimeHours = null;
+    let friendsCount = null;
+
+    if (gamesRes && gamesRes.ok) {
+      const gData = await gamesRes.json();
+      const cs2 = (gData.response?.games || []).find((g: any) => g.appid === 730);
+      if (cs2 && typeof cs2.playtime_forever === "number" && cs2.playtime_forever > 0) {
+        playtimeHours = Math.round(cs2.playtime_forever / 60);
+      }
+    }
+
+    // Community XML fallback if API playtime was marked private
+    if (!playtimeHours) {
+      try {
+        const xmlRes = await fetch(`https://steamcommunity.com/profiles/${steamId64}/games?xml=1`, {
+          headers: { "User-Agent": "Mozilla/5.0" },
+          next: { revalidate: 3600 }
+        });
+        if (xmlRes.ok) {
+          const xmlText = await xmlRes.text();
+          const match = xmlText.match(/<appID>730<\/appID>[\s\S]*?<hoursOnRecord>([0-9.,]+)<\/hoursOnRecord>/);
+          if (match && match[1]) {
+            playtimeHours = Math.round(parseFloat(match[1].replace(/,/g, "")));
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (friendsRes && friendsRes.ok) {
+      const fData = await friendsRes.json();
+      if (Array.isArray(fData.friendslist?.friends)) {
+        friendsCount = fData.friendslist.friends.length;
+      }
+    }
+
+    return { playtimeHours, friendsCount };
+  } catch (err) {
+    console.error("[Steam Telemetry Fetch Error]:", err);
+    return { playtimeHours: null, friendsCount: null };
+  }
+}
