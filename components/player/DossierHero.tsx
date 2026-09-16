@@ -112,7 +112,8 @@ export function DossierHero({ data }: { data: any }) {
     return null;
   })();
 
-  const isPremierRanked = premierRating > 0;
+  const premierWins = Number(premier?.activeSeason?.wins ?? premier?.wins ?? 0);
+  const isPremierRanked = premierRating > 0 && (premierWins >= 10 || Boolean(data?.isCalibrated));
 
   const rawCommends = data?.commendations || steam?.commendations || data?.gc?.commendations || {};
   const normalizedCommendations = {
@@ -279,7 +280,7 @@ const faceitBadgeObj = resolvedFaceitLevel ? getOfficialFaceitBadge(resolvedFace
               <div className="flex flex-col font-mono">
                 <span className="text-[9px] uppercase tracking-wider text-gray-400 font-bold">CS2 PREMIER</span>
                 <span className="text-sm font-black" style={{ color: isPremierRanked ? (premierTier.hex || premierTier.colorHex) : "#9ca3af" }}>
-                  {isPremierRanked ? premierRating.toLocaleString() : "CALIBRATING"}
+                  {isPremierRanked ? premierRating.toLocaleString() : (premierRating > 0 ? "CALIBRATING" : "UNRANKED")}
                 </span>
               </div>
             </div>
