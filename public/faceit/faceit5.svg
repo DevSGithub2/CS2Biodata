@@ -1,14 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
-  <defs>
-    <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" />
-      <stop offset="100%" stop-color="#d97706" />
-    </linearGradient>
-    <filter id="shadow5" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.6" />
-    </filter>
-  </defs>
-  <polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="url(#grad5)" stroke="#fcd34d" stroke-width="4" stroke-linejoin="round" filter="url(#shadow5)" />
-  <polygon points="50,14 80,32 80,68 50,86 20,68 20,32" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linejoin="round" />
-  <text x="50" y="62" text-anchor="middle" fill="#0f172a" font-size="38" font-weight="900" font-family="system-ui, sans-serif" letter-spacing="-1">5</text>
+  <circle cx="50" cy="50" r="44" fill="#18191c" stroke="#2b2d32" stroke-width="8" />
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#facc15" stroke-width="8"
+          stroke-dasharray="276" stroke-dashoffset="55"
+          stroke-linecap="round" transform="rotate(-90 50 50)" />
+  <text x="50" y="60" text-anchor="middle" fill="#ffffff"
+        font-size="38" font-weight="900"
+        font-family="system-ui, -apple-system, sans-serif">5</text>
 </svg>

@@ -53,7 +53,8 @@ export async function GET(req: NextRequest) {
     const segments = statsData?.segments || [];
     const rawMatches = historyData?.items || [];
 
-    const matchesList = await Promise.all(
+    let runningElo = Number(cs2Game.faceit_elo || 0);
+    const rawMatchesList = await Promise.all(
       rawMatches.map(async (m: any) => {
         const matchId = m.match_id;
         let playerStats: any = {};
@@ -109,9 +110,21 @@ export async function GET(req: NextRequest) {
           kdA: `${kills} / ${deaths} / ${assists}`,
           adr: Number(adr).toFixed(1),
           eloChange: playerWon ? "+26" : "-26",
+          isWin: playerWon,
         };
       })
     );
+
+    const matchesList = rawMatchesList.map((match: any) => {
+      const currentSnapshot = runningElo;
+      const change = match.result === "W" ? 26 : -26;
+      runningElo = Math.max(100, runningElo - change);
+      return {
+        ...match,
+        elo: currentSnapshot,
+        playerElo: currentSnapshot,
+      };
+    });
 
     const mapStats = segments
       .filter((s: any) => s.type === "Map")

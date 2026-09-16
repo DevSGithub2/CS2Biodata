@@ -65,7 +65,8 @@ export function FaceitTab({ data }: FaceitTabProps) {
   const matches = faceitData?.matches || [];
   const faceitProfileUrl = `https://www.faceit.com/en/players/${nickname}`;
 
-  const levelBadge = getOfficialFaceitBadge(skillLevel);
+  const resolvedLevel = elo ? getFaceitLevelFromElo(Number(elo)) : (Number(skillLevel) || 1);
+  const levelBadge = getOfficialFaceitBadge(resolvedLevel);
 
   return (
     <div className="space-y-4 font-sans text-[#E5E7EB]">
@@ -212,7 +213,8 @@ export function FaceitTab({ data }: FaceitTabProps) {
             <div className="py-16 text-center text-xs text-zinc-500 font-mono">No recent match history found.</div>
           ) : (
             matches.map((m: any) => {
-              const rowLvl = getFaceitLevelFromElo(m.elo, m.skillLevel || m.skill_level);
+              const matchEloNum = Number(m.elo ?? m.playerElo ?? 0);
+              const rowLvl = matchEloNum > 0 ? getFaceitLevelFromElo(matchEloNum) : (Number(m.skillLevel || m.skill_level || skillLevel) || 1);
                 const lvlBadge = getOfficialFaceitBadge(rowLvl);
               const mapThumb = getMapThumbnail(m.map);
               const roomUrl = m.id && m.id.length > 5 
