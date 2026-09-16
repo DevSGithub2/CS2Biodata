@@ -16,9 +16,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://cs2biotdata.me"),
-  title: {
-    default: "CS2BioData | Advanced CS2 & FACEIT Dossier Intelligence",
-    template: "%s | CS2BioData",
+  title: "CS2BioData",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
   },
   description: "Real-time Counter-Strike 2 telemetry, Premier ratings, FACEIT rankings, and match intelligence dossiers.",
   verification: {
