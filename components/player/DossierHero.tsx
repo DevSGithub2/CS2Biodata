@@ -113,7 +113,7 @@ export function DossierHero({ data }: { data: any }) {
   })();
 
   const premierWins = Number(premier?.activeSeason?.wins ?? premier?.wins ?? 0);
-  const isPremierRanked = premierRating > 0 && (premierWins >= 10 || Boolean(data?.isCalibrated));
+  const isPremierRanked = premierRating > 0;
 
   const rawCommends = data?.commendations || steam?.commendations || data?.gc?.commendations || {};
   const normalizedCommendations = {
