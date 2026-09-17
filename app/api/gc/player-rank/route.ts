@@ -6,10 +6,11 @@ const uri = process.env.MONGODB_URI || "";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get("steamId64")?.trim();
+  const rawQuery = searchParams.get("steamId64")?.trim();
 
-  if (!query || query === "undefined" || query === "null") {
+  if (!rawQuery || rawQuery === "undefined" || rawQuery === "null") {
     return NextResponse.json({
+      steamId64: "",
       premier: { activeSeason: { rating: 0, wins: 0 }, seasons: [] },
       mapRanks: [],
       wingman: { wins: 0, rankId: 0, bestRankId: 0 },
@@ -24,13 +25,14 @@ export async function GET(req: NextRequest) {
   let client: MongoClient | null = null;
 
   try {
-    // 1. Resolve vanity URL / custom name to real 17-digit numeric SteamID64
-    let targetSteamId64 = query;
+    // 1. Universal Resolution: Convert any input (vanity, URL, SteamID) to 17-digit numeric SteamID64
+    let targetSteamId64 = rawQuery;
     if (!/^\d{17}$/.test(targetSteamId64)) {
       try {
-        targetSteamId64 = await resolveToSteamId64(query);
-      } catch {
-        targetSteamId64 = query;
+        const resolved = await resolveToSteamId64(rawQuery);
+        if (resolved) targetSteamId64 = resolved;
+      } catch (resolveErr) {
+        console.warn("[GC Rank] SteamID resolution failed for:", rawQuery);
       }
     }
 
@@ -38,11 +40,12 @@ export async function GET(req: NextRequest) {
     await client.connect();
     const db = client.db("cs2biodata");
 
-    // 2. Strict query by exact SteamID64
+    // 2. Strict ID search in player_ranks
     let record: any = await db.collection("player_ranks").findOne({
       $or: [{ steamId64: targetSteamId64 }, { steamId: targetSteamId64 }]
     });
 
+    // 3. Fallback to dossiers strictly matching targetSteamId64
     if (!record || !record.premier?.activeSeason?.rating) {
       const dossier: any = await db.collection("dossiers").findOne({
         $or: [
@@ -53,16 +56,23 @@ export async function GET(req: NextRequest) {
         ]
       });
 
-      if (dossier && (dossier.premier || dossier.premierRating || dossier.premier_rank)) {
+      if (dossier) {
+        // Look for rank_type_id: 6 (Premier) inside protobuf rankings array if present
+        const premierRanking = Array.isArray(dossier.rankings)
+          ? dossier.rankings.find((r: any) => r.rank_type_id === 6 || r.rank_type_id === 2)
+          : null;
+
         const rating = Number(
+          premierRanking?.rank_id ??
+          dossier.premier?.activeSeason?.rating ??
           dossier.premier?.rating ??
-          dossier.premier?.score ??
           dossier.premierRating ??
           dossier.premier_rank ??
           0
         );
 
         const wins = Number(
+          premierRanking?.wins ??
           dossier.premier?.activeSeason?.wins ??
           dossier.premier?.wins ??
           dossier.premierWins ??
@@ -84,6 +94,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // 4. If ID has never synced with GC bot, return clean uncalibrated state
     if (!record) {
       return NextResponse.json({
         steamId64: targetSteamId64,
@@ -98,7 +109,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     console.error("[GC Player Rank Error]:", err);
     return NextResponse.json({
-      steamId64: query,
+      steamId64: rawQuery,
       premier: { activeSeason: { rating: 0, wins: 0 }, seasons: [] },
       mapRanks: [],
       wingman: { wins: 0, rankId: 0, bestRankId: 0 },
