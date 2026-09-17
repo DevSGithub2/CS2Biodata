@@ -86,12 +86,29 @@ export function SkillGroupsTab({ data }: SkillGroupsTabProps) {
 
   // Ingested Premier Telemetry
   const premier = data?.premier || {};
+  const resolvedRating = Number(
+    premier.activeSeason?.rating ??
+    premier.rating ??
+    premier.score ??
+    data?.premierRating ??
+    data?.premier_rank ??
+    0
+  );
+
+  const resolvedWins = Number(
+    premier.activeSeason?.wins ??
+    premier.wins ??
+    data?.premierWins ??
+    data?.wins ??
+    0
+  );
+
   const activeSeason = {
     season: premier.activeSeason?.name || "Premier Season",
     timeAgo: premier.activeSeason?.lastUpdated || "Live",
-    wins: premier.activeSeason?.wins ?? null,
-    currentRating: premier.activeSeason?.rating ?? null,
-    bestRating: premier.activeSeason?.bestRating ?? null,
+    wins: resolvedWins > 0 ? resolvedWins : (resolvedRating > 0 ? "10+" : 0),
+    currentRating: resolvedRating > 0 ? resolvedRating : null,
+    bestRating: premier.activeSeason?.bestRating || (resolvedRating > 0 ? resolvedRating : null),
   };
 
   const historicSeasons: PremierSeasonItem[] = Array.isArray(premier.seasons)
