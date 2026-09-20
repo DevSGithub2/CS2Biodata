@@ -1,6 +1,5 @@
 "use client";
 
-import { AdBannerHorizontal } from "@/components/ads/AdBannerHorizontal";
 import React from "react";
 import { Navbar } from "@/components/home/Navbar";
 import { TacticalGrid } from "@/components/ui/TacticalGrid";
@@ -77,7 +76,6 @@ export default function HomePage() {
 
       {/* Military HUD Operational Status Bar */}
       <Footer />
-      <AdBannerHorizontal />
-</main>
+      </main>
   );
 }

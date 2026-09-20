@@ -1,6 +1,5 @@
 "use client";
 
-import { AdBannerHorizontal } from "@/components/ads/AdBannerHorizontal";
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Navbar } from "@/components/home/Navbar";
@@ -96,7 +95,6 @@ export default function PlayerDossierPage() {
       </div>
 
       <Footer />
-      <AdBannerHorizontal />
-</main>
+      </main>
   );
 }
