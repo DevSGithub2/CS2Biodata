@@ -6,12 +6,7 @@ import { Search, ChevronRight } from "lucide-react";
 
 // Verified Pro SteamID64 Registry
 const PRO_PLAYERS = [
-  { name: "ZywOo", steamId: "76561198058595732" },
-  { name: "m0NESY", steamId: "76561198305713431" },
-  { name: "donk", steamId: "76561198322699920" },
-  { name: "s1mple", steamId: "76561198034202275" },
-  { name: "ropz", steamId: "76561198121220486" },
-  { name: "b1t", steamId: "76561198341448494" },
+  { name: "DevS_101", steamId: "https://steamcommunity.com/id/DevS_101" }
 ];
 
 export function SearchBar() {
@@ -28,7 +23,7 @@ export function SearchBar() {
 
   const handleQuickLoad = (steamId: string) => {
     setIsSubmitting(true);
-    router.push(`/player/${steamId}`);
+    router.push(`/player/${encodeURIComponent(steamId)}`);
   };
 
   return (
